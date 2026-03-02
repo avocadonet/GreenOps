@@ -115,23 +115,39 @@ services:
       - analytics-service
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
     container_name: greenops_cadvisor
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
     ports:
       - "8081:8080"
-  
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter
+    container_name: greenops_pg_exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://user:password@postgres:5432/greenops_db?sslmode=disable"
+    depends_on:
+      - postgres
+
   redis-exporter:
-    image: oliver006/redis_exporter:latest
+    image: oliver006/redis_exporter
     container_name: greenops_redis_exporter
     environment:
       - REDIS_ADDR=redis:6379
     depends_on:
       - redis
-      
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter
+    container_name: greenops_kafka_exporter
+    command: ["--kafka.server=kafka:9092"]
+    depends_on:
+      - kafka
+
 volumes:
   postgres_data:

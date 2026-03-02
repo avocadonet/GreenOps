@@ -6,52 +6,96 @@ from aiokafka import AIOKafkaConsumer
 from redis import asyncio as aioredis
 import asyncpg
 from datetime import datetime
-from prometheus_client import start_http_server, Counter, Gauge
+from prometheus_client import start_http_server, Counter, Gauge, Histogram
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
 KAFKA_TOPIC = "raw_energy_data"
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@postgres:5432/greenops_db")
 
-MESSAGES_PROCESSED = Counter('energy_messages_total', 'Total processed energy messages')
-CURRENT_VALUE_GAUGE = Gauge('energy_current_value', 'Current energy value being processed', ['building_id'])
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger("DataProcessor")
 
-logging.basicConfig(level=logging.INFO)
+MESSAGES_TOTAL = Counter(
+    'greenops_processed_messages_total', 
+    'Total energy messages processed by worker'
+)
+CURRENT_LOAD = Gauge(
+    'greenops_building_consumption_kwh', 
+    'Current energy load in kWh', 
+    ['building_id']
+)
+ANOMALIES_TOTAL = Counter(
+    'greenops_anomalies_total', 
+    'Total anomalies detected (>50kWh)'
+)
+PROCESS_TIME = Histogram(
+    'greenops_processing_duration_seconds', 
+    'Time spent processing a single Kafka message'
+)
 
 async def save_to_postgres(conn, data):
     query = """
         INSERT INTO energy_metrics (building_id, sensor_id, value, timestamp)
         VALUES ($1, $2, $3, $4)
     """
-    await conn.execute(query, data['building_id'], data['sensor_id'], data['value'], data['timestamp'])
+    await conn.execute(
+        query, 
+        data['building_id'], 
+        data['sensor_id'], 
+        data['value'], 
+        data['timestamp']
+    )
 
 async def process_message(msg, redis, pg_conn):
-    data = json.loads(msg.value.decode('utf-8'))
-    
-    if isinstance(data.get('timestamp'), str):
+    with PROCESS_TIME.time():
         try:
-            data['timestamp'] = datetime.fromisoformat(data['timestamp'])
-        except ValueError:
-            data['timestamp'] = datetime.strptime(data['timestamp'], "%Y-%m-%d %H:%M:%S.%f")
+            payload = json.loads(msg.value.decode('utf-8'))
+            
+            if isinstance(payload.get('timestamp'), str):
+                try:
+                    payload['timestamp'] = datetime.fromisoformat(payload['timestamp'])
+                except ValueError:
+                    payload['timestamp'] = datetime.utcnow()
 
-    redis_key = f"building:{data['building_id']}:latest"
-    await redis.set(redis_key, msg.value.decode('utf-8')) 
-    
-    await save_to_postgres(pg_conn, data)
-        
-    if data['value'] > 50.0:
-        logging.warning(f"!!! ANOMALY DETECTED in Building {data['building_id']}: {data['value']} kWh")
-    
-    logging.info(f"Processed: Building {data['building_id']} - {data['value']} kWh")
+            building_id = payload['building_id']
+            value = payload['value']
+
+            MESSAGES_TOTAL.inc()
+            CURRENT_LOAD.labels(building_id=building_id).set(value)
+
+            if value > 50.0:
+                ANOMALIES_TOTAL.inc()
+                logger.warning(f"⚠️ ANOMALY: Building {building_id} consumed {value} kWh!")
+
+            redis_key = f"building:{building_id}:latest"
+            await redis.set(redis_key, json.dumps(payload, default=str))
+
+            await save_to_postgres(pg_conn, payload)
+
+            logger.info(f"✅ Processed building {building_id}: {value} kWh")
+
+        except Exception as e:
+            logger.error(f"❌ Error processing message: {e}")
 
 async def main():
     start_http_server(8000)
-    logging.info("Metrics server started on port 8000")
+    logger.info("Prometheus metrics server started on port 8000")
+
+    redis = aioredis.from_url(REDIS_URL, decode_responses=True)
     
-    redis = aioredis.from_url(REDIS_URL)
-    
-    pg_conn = await asyncpg.connect(DATABASE_URL)
-    
+    pg_conn = None
+    while not pg_conn:
+        try:
+            pg_conn = await asyncpg.connect(DATABASE_URL)
+            logger.info("Connected to PostgreSQL")
+        except Exception:
+            logger.info("Waiting for PostgreSQL...")
+            await asyncio.sleep(2)
+
     await pg_conn.execute("""
         CREATE TABLE IF NOT EXISTS energy_metrics (
             id SERIAL PRIMARY KEY,
@@ -65,19 +109,26 @@ async def main():
     consumer = AIOKafkaConsumer(
         KAFKA_TOPIC,
         bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-        group_id="processor-group"
+        group_id="greenops-processor-group",
+        auto_offset_reset="earliest"
     )
 
     await consumer.start()
-    logging.info("Processor started, waiting for messages...")
-    
+    logger.info(f"Kafka Consumer started on topic '{KAFKA_TOPIC}'")
+
     try:
         async for msg in consumer:
             await process_message(msg, redis, pg_conn)
-            MESSAGES_PROCESSED.inc()
+    except Exception as e:
+        logger.error(f"Main loop error: {e}")
     finally:
+        logger.info("Shutting down...")
         await consumer.stop()
+        await redis.close()
         await pg_conn.close()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
