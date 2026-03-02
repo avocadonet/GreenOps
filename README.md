@@ -65,5 +65,5 @@ cd GreenOps
 
 docker-compose up -d --build
 
-python simulator.py # для проведения симулятора
+python simulator.py # для проведения симуляции
 ```
