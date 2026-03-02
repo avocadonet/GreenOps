@@ -8,7 +8,7 @@
         modelValue === id ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'
       ]"
     >
-      Building #{{ id }}
+      Building {{ id }}
     </button>
   </div>
 </template>
