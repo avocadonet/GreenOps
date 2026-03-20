@@ -64,22 +64,25 @@ async def process_message(msg, redis, pg_conn):
             building_id = payload['building_id']
             value = payload['value']
 
+            raw_threshold = await redis.get(f"building:{building_id}:threshold")
+            threshold = float(raw_threshold) if raw_threshold else 50.0
+
             MESSAGES_TOTAL.inc()
             CURRENT_LOAD.labels(building_id=building_id).set(value)
 
-            if value > 50.0:
+            if value > threshold:
                 ANOMALIES_TOTAL.inc()
-                logger.warning(f"⚠️ ANOMALY: Building {building_id} consumed {value} kWh!")
+                logger.warning(f"ANOMALY: Building {building_id} consumed {value} kWh! (Limit: {threshold})")
 
             redis_key = f"building:{building_id}:latest"
             await redis.set(redis_key, json.dumps(payload, default=str))
 
             await save_to_postgres(pg_conn, payload)
 
-            logger.info(f"✅ Processed building {building_id}: {value} kWh")
+            logger.info(f"Processed building {building_id}: {value} kWh")
 
         except Exception as e:
-            logger.error(f"❌ Error processing message: {e}")
+            logger.error(f"Error processing message: {e}")
 
 async def main():
     start_http_server(8000)
@@ -117,7 +120,7 @@ async def main():
         try:
             await consumer.start()
             connected = True
-            logger.info(f"✅ Kafka Consumer started on topic '{KAFKA_TOPIC}'")
+            logger.info(f"Kafka Consumer started on topic '{KAFKA_TOPIC}'")
         except Exception as e:
             logger.info(f"Waiting for Kafka... {e}")
             await asyncio.sleep(2)

@@ -59,3 +59,14 @@ async def get_history(building_id: int):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+@app.delete("/api/v1/analytics/{building_id}/history")
+async def delete_history(building_id: int):
+    async with pg_pool.acquire() as conn:
+        await conn.execute("DELETE FROM energy_metrics WHERE building_id = $1", building_id)
+    return {"message": f"History for building {building_id} deleted successfully"}
+
+@app.put("/api/v1/analytics/{building_id}/threshold")
+async def update_threshold(building_id: int, threshold: float):
+    await redis.set(f"building:{building_id}:threshold", threshold)
+    return {"building_id": building_id, "new_threshold": threshold}
