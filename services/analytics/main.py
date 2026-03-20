@@ -34,14 +34,14 @@ async def shutdown():
     await redis.close()
     await pg_pool.close()
 
-@app.get("/api/v1/buildings/{building_id}/current")
+@app.get("/api/v1/analytics/{building_id}/current")
 async def get_current_data(building_id: int):
     data = await redis.get(f"building:{building_id}:latest")
     if not data:
         raise HTTPException(status_code=404, detail="Data not found")
     return json.loads(data)
 
-@app.get("/api/v1/buildings/{building_id}/history")
+@app.get("/api/v1/analytics/{building_id}/history")
 async def get_history(building_id: int):
     async with pg_pool.acquire() as conn:
         rows = await conn.fetch(

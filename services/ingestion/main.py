@@ -9,14 +9,11 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 app = FastAPI(title="GreenOps Ingestion Service")
 
-# Инструментируем приложение для сбора метрик Prometheus
 Instrumentator().instrument(app).expose(app)
 
-# Настройки Kafka из переменных окружения
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
 KAFKA_TOPIC = "raw_energy_data"
 
-# Глобальная переменная для продюсера
 producer = None
 
 class SensorData(BaseModel):

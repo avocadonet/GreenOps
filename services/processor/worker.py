@@ -112,8 +112,16 @@ async def main():
         group_id="greenops-processor-group",
         auto_offset_reset="earliest"
     )
+    connected = False
+    while not connected:
+        try:
+            await consumer.start()
+            connected = True
+            logger.info(f"✅ Kafka Consumer started on topic '{KAFKA_TOPIC}'")
+        except Exception as e:
+            logger.info(f"Waiting for Kafka... {e}")
+            await asyncio.sleep(2)
 
-    await consumer.start()
     logger.info(f"Kafka Consumer started on topic '{KAFKA_TOPIC}'")
 
     try:
