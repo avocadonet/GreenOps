@@ -78,7 +78,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       - frontend
       - ingestion-service
@@ -100,7 +100,7 @@ services:
     build: ./frontend
     container_name: greenops_frontend
     ports:
-      - "8080:3000"
+      - "5000:3000"
     depends_on:
       - analytics-service
 
