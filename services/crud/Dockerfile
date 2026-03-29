@@ -6,12 +6,13 @@ RUN pip install poetry
 
 # Copy path dependencies first (relative to build context = repo root)
 COPY services/shared /shared
+COPY services/crudx /crudx
 
 # Copy service source
-COPY services/analytics /app
+COPY services/crud /app
 
 RUN poetry install --no-root
 
 ENV PYTHONPATH=/app/src
 
-CMD ["poetry", "run", "python", "main.py"]
+CMD ["poetry", "run", "uvicorn", "infrastructure.api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "analytics"
+version = "0.1.0"
+description = "GreenOps Analytics / CRON service"
+authors = ["alex-vin0 <alexander-vin0@yandex.ru>"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+apscheduler = "^3.10.4"
+asyncpg = "^0.31.0"
+sqlalchemy = "^2.0.40"
+dishka = "^1.7.2"
+adaptix = "^3.0.0b11"
+greenops-shared = {path = "../shared", develop = true}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

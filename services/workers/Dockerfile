@@ -6,9 +6,10 @@ RUN pip install poetry
 
 # Copy path dependencies first (relative to build context = repo root)
 COPY services/shared /shared
+COPY services/crudx /crudx
 
 # Copy service source
-COPY services/analytics /app
+COPY services/workers /app
 
 RUN poetry install --no-root
 
