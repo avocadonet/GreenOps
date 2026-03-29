@@ -1,22 +1,15 @@
 FROM python:3.12-slim
 
-RUN pip3 install poetry
-
 WORKDIR /app
 
-COPY ./services/crud/pyproject.toml ./crud/pyproject.toml
-COPY ./services/crud/poetry.lock ./crud/poetry.lock
-COPY ./services/crudx ./crudx
+RUN pip install poetry
 
-WORKDIR /app/crudx
-RUN poetry build
+COPY ../shared /shared
+COPY ../crudx /crudx
+COPY . .
 
-WORKDIR /app/crud
 RUN poetry install --no-root
 
-WORKDIR /app
-COPY ./services/crud ./crud
+ENV PYTHONPATH=/app/src
 
-WORKDIR /app/crud
-EXPOSE 5000
-CMD ["poetry", "run", "python", "main.py"]
+CMD ["poetry", "run", "uvicorn", "infrastructure.api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]

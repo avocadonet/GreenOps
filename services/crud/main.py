@@ -1,11 +1,10 @@
-import asyncio
-
-
-async def main():
-    from uvicorn import run
-
-    run("infrastructure.server:app", reload=True, port=5000, host="0.0.0.0")
-
+import uvicorn
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    uvicorn.run(
+        "infrastructure.api.app:create_app",
+        factory=True,
+        host="0.0.0.0",
+        port=8000,
+        reload=False,
+    )

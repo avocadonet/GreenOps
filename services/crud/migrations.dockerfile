@@ -1,21 +1,16 @@
 FROM python:3.12-slim
 
-RUN pip3 install poetry
-
 WORKDIR /app
 
-COPY ./services/crud/pyproject.toml ./crud/pyproject.toml
-COPY ./services/crud/poetry.lock ./crud/poetry.lock
-COPY ./services/crudx ./crudx
+RUN pip install poetry
 
-WORKDIR /app/crudx
-RUN poetry build
+COPY ../shared /shared
+COPY ../crudx /crudx
+COPY . .
 
-WORKDIR /app/crud
 RUN poetry install --no-root
 
-WORKDIR /app
-COPY ./services/crud ./crud
+ENV PYTHONPATH=/app/src
 
-WORKDIR /app/crud
-CMD poetry run alembic upgrade head
+# Run migrations from the shared package (alembic.ini lives there)
+CMD ["poetry", "run", "alembic", "--config", "/shared/alembic.ini", "upgrade", "head"]
