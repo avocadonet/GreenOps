@@ -4,9 +4,12 @@ WORKDIR /app
 
 RUN pip install poetry
 
-COPY ../shared /shared
-COPY ../crudx /crudx
-COPY . .
+# Copy path dependencies first (relative to build context = repo root)
+COPY services/shared /shared
+COPY services/crudx /crudx
+
+# Copy service source
+COPY services/crud /app
 
 RUN poetry install --no-root
 

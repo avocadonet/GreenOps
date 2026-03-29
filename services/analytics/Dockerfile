@@ -4,11 +4,14 @@ WORKDIR /app
 
 RUN pip install poetry
 
-COPY ../shared /shared
-COPY . .
+# Copy path dependencies first (relative to build context = repo root)
+COPY services/shared /shared
+
+# Copy service source
+COPY services/analytics /app
 
 RUN poetry install --no-root
 
 ENV PYTHONPATH=/app/src
 
-CMD ["poetry", "run", "python", "-m", "main"]
+CMD ["poetry", "run", "python", "main.py"]

@@ -4,13 +4,16 @@ WORKDIR /app
 
 RUN pip install poetry
 
-COPY ../shared /shared
-COPY ../crudx /crudx
-COPY . .
+# Copy path dependencies first (relative to build context = repo root)
+COPY services/shared /shared
+COPY services/crudx /crudx
+
+# Copy service source (poetry.toml lives here)
+COPY services/crud /app
 
 RUN poetry install --no-root
 
-ENV PYTHONPATH=/app/src
+# alembic.ini lives in /shared; PYTHONPATH exposes the shared package to env.py
+ENV PYTHONPATH=/app/src:/shared/src
 
-# Run migrations from the shared package (alembic.ini lives there)
 CMD ["poetry", "run", "alembic", "--config", "/shared/alembic.ini", "upgrade", "head"]
