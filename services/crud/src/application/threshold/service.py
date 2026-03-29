@@ -7,7 +7,9 @@ from shared.entities.threshold import Threshold
 
 
 class ThresholdService:
-    def __init__(self, repository: ThresholdRepository, tx: TransactionsGateway) -> None:
+    def __init__(
+        self, repository: ThresholdRepository, tx: TransactionsGateway
+    ) -> None:
         self._repository = repository
         self._tx = tx
 

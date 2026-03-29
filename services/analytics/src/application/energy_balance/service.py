@@ -37,20 +37,27 @@ class EnergyBalanceService:
         buildings = await self._buildings.list_all()
         for building in buildings:
             try:
-                await self._compute_for_building(building, yesterday_start, yesterday_end)
+                await self._compute_for_building(
+                    building, yesterday_start, yesterday_end
+                )
             except Exception:
                 logger.exception(
-                    "Failed to compute EnergyBalance for building %s", building.building_id
+                    "Failed to compute EnergyBalance for building %s",
+                    building.building_id,
                 )
 
-    async def _compute_for_building(self, building, period_start: datetime, period_end: datetime) -> None:
+    async def _compute_for_building(
+        self, building, period_start: datetime, period_end: datetime
+    ) -> None:
         sensors = await self._sensors.list_by_building(building.building_id)
 
         common_sensor = next(
             (s for s in sensors if s.sensor_type == SensorType.COMMON), None
         )
         if common_sensor is None:
-            logger.debug("Building %s has no COMMON sensor — skipping", building.building_id)
+            logger.debug(
+                "Building %s has no COMMON sensor — skipping", building.building_id
+            )
             return
 
         common_metrics = await self._metrics.list_by_sensor_in_range(
@@ -58,7 +65,9 @@ class EnergyBalanceService:
         )
         common_kwh = sum(m.value for m in common_metrics)
 
-        individual_sensors = [s for s in sensors if s.sensor_type == SensorType.INDIVIDUAL]
+        individual_sensors = [
+            s for s in sensors if s.sensor_type == SensorType.INDIVIDUAL
+        ]
         individual_sum = 0.0
         for sensor in individual_sensors:
             metrics = await self._metrics.list_by_sensor_in_range(

@@ -23,10 +23,19 @@ class SpikeDetector:
         threshold: Threshold,
         baseline: AverageLoad | None,
     ) -> SpikeResult | None:
-        if threshold.threshold_type == ThresholdType.UPPER and value > threshold.limit_value:
+        if (
+            threshold.threshold_type == ThresholdType.UPPER
+            and value > threshold.limit_value
+        ):
             return SpikeResult(incident_type=IncidentType.OVERLOAD)
-        if threshold.threshold_type == ThresholdType.LOWER and value < threshold.limit_value:
+        if (
+            threshold.threshold_type == ThresholdType.LOWER
+            and value < threshold.limit_value
+        ):
             return SpikeResult(incident_type=IncidentType.LEAK)
-        if value < self.IDLE_ZERO_THRESHOLD and duration_seconds > self.IDLE_DURATION_SECONDS:
+        if (
+            value < self.IDLE_ZERO_THRESHOLD
+            and duration_seconds > self.IDLE_DURATION_SECONDS
+        ):
             return SpikeResult(incident_type=IncidentType.IDLE)
         return None

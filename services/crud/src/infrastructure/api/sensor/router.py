@@ -22,10 +22,16 @@ async def create_sensor(
     body: CreateSensorRequest,
     service: FromDishka[SensorService],
 ):
-    return mappers.entity_to_response(await service.create(mappers.create_request_to_dto(body)))
+    return mappers.entity_to_response(
+        await service.create(mappers.create_request_to_dto(body))
+    )
 
 
-@router.get("/{sensor_id}", response_model=SensorResponse, responses={404: {"model": ErrorModel}})
+@router.get(
+    "/{sensor_id}",
+    response_model=SensorResponse,
+    responses={404: {"model": ErrorModel}},
+)
 async def read_sensor(
     sensor_id: UUID,
     service: FromDishka[SensorService],
@@ -33,7 +39,11 @@ async def read_sensor(
     return mappers.entity_to_response(await service.read(sensor_id))
 
 
-@router.delete("/{sensor_id}", response_model=SensorResponse, responses={404: {"model": ErrorModel}})
+@router.delete(
+    "/{sensor_id}",
+    response_model=SensorResponse,
+    responses={404: {"model": ErrorModel}},
+)
 async def delete_sensor(
     sensor_id: UUID,
     service: FromDishka[SensorService],

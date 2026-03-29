@@ -17,10 +17,16 @@ async def create_threshold(
     body: CreateThresholdRequest,
     service: FromDishka[ThresholdService],
 ):
-    return mappers.entity_to_response(await service.create(mappers.create_request_to_dto(body)))
+    return mappers.entity_to_response(
+        await service.create(mappers.create_request_to_dto(body))
+    )
 
 
-@router.get("/{threshold_id}", response_model=ThresholdResponse, responses={404: {"model": ErrorModel}})
+@router.get(
+    "/{threshold_id}",
+    response_model=ThresholdResponse,
+    responses={404: {"model": ErrorModel}},
+)
 async def read_threshold(
     threshold_id: UUID,
     service: FromDishka[ThresholdService],
@@ -28,7 +34,11 @@ async def read_threshold(
     return mappers.entity_to_response(await service.read(threshold_id))
 
 
-@router.delete("/{threshold_id}", response_model=ThresholdResponse, responses={404: {"model": ErrorModel}})
+@router.delete(
+    "/{threshold_id}",
+    response_model=ThresholdResponse,
+    responses={404: {"model": ErrorModel}},
+)
 async def delete_threshold(
     threshold_id: UUID,
     service: FromDishka[ThresholdService],

@@ -9,8 +9,8 @@ import pytest
 
 
 class RoleEnum(str, Enum):
-    ADMIN = "admin"
-    USER = "user"
+    ADMIN = "ADMIN"
+    USER = "USER"
 
 
 @dataclass

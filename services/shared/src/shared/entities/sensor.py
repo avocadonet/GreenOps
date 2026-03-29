@@ -13,4 +13,4 @@ class Sensor:
     calibration_date: date
     sensor_type: SensorType
     building_id: UUID | None  # set when sensor_type == COMMON
-    unit_id: UUID | None      # set when sensor_type == INDIVIDUAL
+    unit_id: UUID | None  # set when sensor_type == INDIVIDUAL

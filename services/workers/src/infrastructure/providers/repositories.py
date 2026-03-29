@@ -18,5 +18,9 @@ class RepositoriesProvider(Provider):
     metrics = provide(source=MetricDatabaseRepository, provides=MetricRepository)
     incidents = provide(source=IncidentDatabaseRepository, provides=IncidentRepository)
     peak_loads = provide(source=PeakLoadDatabaseRepository, provides=PeakLoadRepository)
-    thresholds = provide(source=ThresholdReadDatabaseRepository, provides=ThresholdReadRepository)
-    avg_loads = provide(source=AverageLoadReadDatabaseRepository, provides=AverageLoadReadRepository)
+    thresholds = provide(
+        source=ThresholdReadDatabaseRepository, provides=ThresholdReadRepository
+    )
+    avg_loads = provide(
+        source=AverageLoadReadDatabaseRepository, provides=AverageLoadReadRepository
+    )

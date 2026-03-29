@@ -17,10 +17,16 @@ async def create_building(
     body: CreateBuildingRequest,
     service: FromDishka[BuildingService],
 ):
-    return mappers.entity_to_response(await service.create(mappers.create_request_to_dto(body)))
+    return mappers.entity_to_response(
+        await service.create(mappers.create_request_to_dto(body))
+    )
 
 
-@router.get("/{building_id}", response_model=BuildingResponse, responses={404: {"model": ErrorModel}})
+@router.get(
+    "/{building_id}",
+    response_model=BuildingResponse,
+    responses={404: {"model": ErrorModel}},
+)
 async def read_building(
     building_id: UUID,
     service: FromDishka[BuildingService],
@@ -28,7 +34,11 @@ async def read_building(
     return mappers.entity_to_response(await service.read(building_id))
 
 
-@router.put("/{building_id}", response_model=BuildingResponse, responses={404: {"model": ErrorModel}})
+@router.put(
+    "/{building_id}",
+    response_model=BuildingResponse,
+    responses={404: {"model": ErrorModel}},
+)
 async def update_building(
     building_id: UUID,
     body: UpdateBuildingRequest,
@@ -39,7 +49,11 @@ async def update_building(
     )
 
 
-@router.delete("/{building_id}", response_model=BuildingResponse, responses={404: {"model": ErrorModel}})
+@router.delete(
+    "/{building_id}",
+    response_model=BuildingResponse,
+    responses={404: {"model": ErrorModel}},
+)
 async def delete_building(
     building_id: UUID,
     service: FromDishka[BuildingService],

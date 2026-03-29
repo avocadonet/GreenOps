@@ -17,10 +17,14 @@ async def create_unit(
     body: CreateUnitRequest,
     service: FromDishka[UnitService],
 ):
-    return mappers.entity_to_response(await service.create(mappers.create_request_to_dto(body)))
+    return mappers.entity_to_response(
+        await service.create(mappers.create_request_to_dto(body))
+    )
 
 
-@router.get("/{unit_id}", response_model=UnitResponse, responses={404: {"model": ErrorModel}})
+@router.get(
+    "/{unit_id}", response_model=UnitResponse, responses={404: {"model": ErrorModel}}
+)
 async def read_unit(
     unit_id: UUID,
     service: FromDishka[UnitService],
@@ -28,7 +32,9 @@ async def read_unit(
     return mappers.entity_to_response(await service.read(unit_id))
 
 
-@router.put("/{unit_id}", response_model=UnitResponse, responses={404: {"model": ErrorModel}})
+@router.put(
+    "/{unit_id}", response_model=UnitResponse, responses={404: {"model": ErrorModel}}
+)
 async def update_unit(
     unit_id: UUID,
     body: UpdateUnitRequest,
@@ -39,7 +45,9 @@ async def update_unit(
     )
 
 
-@router.delete("/{unit_id}", response_model=UnitResponse, responses={404: {"model": ErrorModel}})
+@router.delete(
+    "/{unit_id}", response_model=UnitResponse, responses={404: {"model": ErrorModel}}
+)
 async def delete_unit(
     unit_id: UUID,
     service: FromDishka[UnitService],

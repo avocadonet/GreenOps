@@ -46,6 +46,12 @@ class AverageLoadService:
                         calculated_at=now,
                     )
                 )
-                logger.info("AverageLoad computed for sensor %s: %.3f", sensor.sensor_id, result.mean_value)
+                logger.info(
+                    "AverageLoad computed for sensor %s: %.3f",
+                    sensor.sensor_id,
+                    result.mean_value,
+                )
             except Exception:
-                logger.exception("Failed to compute AverageLoad for sensor %s", sensor.sensor_id)
+                logger.exception(
+                    "Failed to compute AverageLoad for sensor %s", sensor.sensor_id
+                )

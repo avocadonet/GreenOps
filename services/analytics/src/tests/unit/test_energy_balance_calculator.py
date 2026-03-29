@@ -36,6 +36,7 @@ class TestEnergyBalanceCalculator(unittest.IsolatedAsyncioTestCase):
 class TestAverageLoadCalculator(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         from domain.average_load_calculator import AverageLoadCalculator
+
         self.calculator = AverageLoadCalculator()
 
     def test_empty_values_returns_none(self):

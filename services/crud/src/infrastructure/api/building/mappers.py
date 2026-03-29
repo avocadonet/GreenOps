@@ -14,7 +14,9 @@ def create_request_to_dto(request: CreateBuildingRequest) -> CreateBuildingDTO:
     )
 
 
-def update_request_to_dto(request: UpdateBuildingRequest, building_id: UUID) -> UpdateBuildingDTO:
+def update_request_to_dto(
+    request: UpdateBuildingRequest, building_id: UUID
+) -> UpdateBuildingDTO:
     return UpdateBuildingDTO(
         building_id=building_id,
         address=request.address,

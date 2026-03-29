@@ -36,10 +36,6 @@ class SensorService:
                 "Sensor cannot be attached to both a building and a unit"
             )
         if sensor_type == SensorType.COMMON and building_id is None:
-            raise SensorAttachmentException(
-                "COMMON sensor requires building_id"
-            )
+            raise SensorAttachmentException("COMMON sensor requires building_id")
         if sensor_type == SensorType.INDIVIDUAL and unit_id is None:
-            raise SensorAttachmentException(
-                "INDIVIDUAL sensor requires unit_id"
-            )
+            raise SensorAttachmentException("INDIVIDUAL sensor requires unit_id")

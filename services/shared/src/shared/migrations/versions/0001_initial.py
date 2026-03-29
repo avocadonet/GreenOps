@@ -4,6 +4,7 @@ Revision ID: 0001
 Revises:
 Create Date: 2026-03-29
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -13,14 +14,14 @@ branch_labels = None
 depends_on = None
 
 # Enum type definitions — values must stay in sync with shared/enums.py
-building_type_enum = sa.Enum("residential", "industrial", name="building_type_enum")
-sensor_type_enum = sa.Enum("common", "individual", name="sensor_type_enum")
-threshold_type_enum = sa.Enum("upper", "lower", name="threshold_type_enum")
-tariff_zone_enum = sa.Enum("day", "night", name="tariff_zone_enum")
-window_size_enum = sa.Enum("hour", "day", name="window_size_enum")
-incident_type_enum = sa.Enum("overload", "leak", "idle", name="incident_type_enum")
-incident_severity_enum = sa.Enum("low", "high", name="incident_severity_enum")
-incident_status_enum = sa.Enum("open", "resolved", name="incident_status_enum")
+building_type_enum = sa.Enum("RESIDENTIAL", "INDUSTRIAL", name="building_type_enum")
+sensor_type_enum = sa.Enum("COMMON", "INDIVIDUAL", name="sensor_type_enum")
+threshold_type_enum = sa.Enum("UPPER", "LOWER", name="threshold_type_enum")
+tariff_zone_enum = sa.Enum("DAY", "NIGHT", name="tariff_zone_enum")
+window_size_enum = sa.Enum("HOUR", "DAY", name="window_size_enum")
+incident_type_enum = sa.Enum("OVERLOAD", "LEAK", "IDLE", name="incident_type_enum")
+incident_severity_enum = sa.Enum("LOW", "HIGH", name="incident_severity_enum")
+incident_status_enum = sa.Enum("OPEN", "RESOLVED", name="incident_status_enum")
 
 
 def upgrade() -> None:
@@ -37,7 +38,12 @@ def upgrade() -> None:
     op.create_table(
         "units",
         sa.Column("unit_id", sa.UUID(), primary_key=True),
-        sa.Column("building_id", sa.UUID(), sa.ForeignKey("buildings.building_id"), nullable=False),
+        sa.Column(
+            "building_id",
+            sa.UUID(),
+            sa.ForeignKey("buildings.building_id"),
+            nullable=False,
+        ),
         sa.Column("unit_number", sa.String(50), nullable=False),
         sa.Column("floor", sa.Integer(), nullable=False),
         sa.Column("owner_name", sa.String(200), nullable=False),
@@ -51,7 +57,12 @@ def upgrade() -> None:
         sa.Column("model", sa.String(200), nullable=False),
         sa.Column("calibration_date", sa.Date(), nullable=False),
         sa.Column("sensor_type", sensor_type_enum, nullable=False),
-        sa.Column("building_id", sa.UUID(), sa.ForeignKey("buildings.building_id"), nullable=True),
+        sa.Column(
+            "building_id",
+            sa.UUID(),
+            sa.ForeignKey("buildings.building_id"),
+            nullable=True,
+        ),
         sa.Column("unit_id", sa.UUID(), sa.ForeignKey("units.unit_id"), nullable=True),
     )
 
@@ -59,7 +70,9 @@ def upgrade() -> None:
     op.create_table(
         "thresholds",
         sa.Column("threshold_id", sa.UUID(), primary_key=True),
-        sa.Column("sensor_id", sa.UUID(), sa.ForeignKey("sensors.sensor_id"), nullable=False),
+        sa.Column(
+            "sensor_id", sa.UUID(), sa.ForeignKey("sensors.sensor_id"), nullable=False
+        ),
         sa.Column("limit_value", sa.Float(), nullable=False),
         sa.Column("threshold_type", threshold_type_enum, nullable=False),
         sa.Column("tariff_zone", tariff_zone_enum, nullable=False),
@@ -69,9 +82,13 @@ def upgrade() -> None:
     op.create_table(
         "metrics",
         sa.Column("metric_id", sa.UUID(), primary_key=True),
-        sa.Column("sensor_id", sa.UUID(), sa.ForeignKey("sensors.sensor_id"), nullable=False),
+        sa.Column(
+            "sensor_id", sa.UUID(), sa.ForeignKey("sensors.sensor_id"), nullable=False
+        ),
         sa.Column("value", sa.Float(), nullable=False),
-        sa.Column("measurement_unit", sa.String(10), nullable=False, server_default="kWh"),
+        sa.Column(
+            "measurement_unit", sa.String(10), nullable=False, server_default="kWh"
+        ),
         sa.Column("voltage", sa.Float(), nullable=False),
         sa.Column("current", sa.Float(), nullable=False),
         sa.Column("recorded_at", sa.DateTime(timezone=True), nullable=False),
@@ -81,7 +98,12 @@ def upgrade() -> None:
     op.create_table(
         "energy_balances",
         sa.Column("balance_id", sa.UUID(), primary_key=True),
-        sa.Column("building_id", sa.UUID(), sa.ForeignKey("buildings.building_id"), nullable=False),
+        sa.Column(
+            "building_id",
+            sa.UUID(),
+            sa.ForeignKey("buildings.building_id"),
+            nullable=False,
+        ),
         sa.Column("period_start", sa.DateTime(timezone=True), nullable=False),
         sa.Column("period_end", sa.DateTime(timezone=True), nullable=False),
         sa.Column("loss_kwh", sa.Float(), nullable=False),
@@ -92,7 +114,9 @@ def upgrade() -> None:
     op.create_table(
         "average_loads",
         sa.Column("avg_load_id", sa.UUID(), primary_key=True),
-        sa.Column("sensor_id", sa.UUID(), sa.ForeignKey("sensors.sensor_id"), nullable=False),
+        sa.Column(
+            "sensor_id", sa.UUID(), sa.ForeignKey("sensors.sensor_id"), nullable=False
+        ),
         sa.Column("window_size", window_size_enum, nullable=False),
         sa.Column("mean_value", sa.Float(), nullable=False),
         sa.Column("calculated_at", sa.DateTime(timezone=True), nullable=False),
@@ -102,7 +126,9 @@ def upgrade() -> None:
     op.create_table(
         "peak_loads",
         sa.Column("peak_id", sa.UUID(), primary_key=True),
-        sa.Column("sensor_id", sa.UUID(), sa.ForeignKey("sensors.sensor_id"), nullable=False),
+        sa.Column(
+            "sensor_id", sa.UUID(), sa.ForeignKey("sensors.sensor_id"), nullable=False
+        ),
         sa.Column("max_value", sa.Float(), nullable=False),
         sa.Column("duration_seconds", sa.Float(), nullable=False),
         sa.Column("detected_at", sa.DateTime(timezone=True), nullable=False),
@@ -114,9 +140,21 @@ def upgrade() -> None:
         sa.Column("incident_id", sa.UUID(), primary_key=True),
         sa.Column("incident_type", incident_type_enum, nullable=False),
         sa.Column("severity", incident_severity_enum, nullable=False),
-        sa.Column("status", incident_status_enum, nullable=False, server_default="open"),
-        sa.Column("threshold_id", sa.UUID(), sa.ForeignKey("thresholds.threshold_id"), nullable=True),
-        sa.Column("peak_load_id", sa.UUID(), sa.ForeignKey("peak_loads.peak_id"), nullable=True),
+        sa.Column(
+            "status", incident_status_enum, nullable=False, server_default="OPEN"
+        ),
+        sa.Column(
+            "threshold_id",
+            sa.UUID(),
+            sa.ForeignKey("thresholds.threshold_id"),
+            nullable=True,
+        ),
+        sa.Column(
+            "peak_load_id",
+            sa.UUID(),
+            sa.ForeignKey("peak_loads.peak_id"),
+            nullable=True,
+        ),
     )
 
 

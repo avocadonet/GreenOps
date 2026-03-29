@@ -16,4 +16,6 @@ class RepositoriesProvider(Provider):
     buildings = provide(source=BuildingDatabaseRepository, provides=BuildingRepository)
     units = provide(source=UnitDatabaseRepository, provides=UnitRepository)
     sensors = provide(source=SensorDatabaseRepository, provides=SensorRepository)
-    thresholds = provide(source=ThresholdDatabaseRepository, provides=ThresholdRepository)
+    thresholds = provide(
+        source=ThresholdDatabaseRepository, provides=ThresholdRepository
+    )

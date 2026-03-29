@@ -7,7 +7,7 @@ import pytest_asyncio
 from sqlalchemy import DateTime, func
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from tests.conftest import RoleEnum, User
+from conftest import RoleEnum, User
 
 
 class Base(DeclarativeBase):

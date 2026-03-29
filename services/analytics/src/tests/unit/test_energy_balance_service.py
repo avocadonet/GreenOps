@@ -78,7 +78,7 @@ class TestEnergyBalanceServiceRunDaily(unittest.IsolatedAsyncioTestCase):
         self.buildings_repo.list_all.return_value = [building]
         self.sensors_repo.list_by_building.return_value = [common, unit_sensor]
         self.metrics_repo.list_by_sensor_in_range.side_effect = [
-            [_metric(common.sensor_id, 1000.0)],   # common meter
+            [_metric(common.sensor_id, 1000.0)],  # common meter
             [_metric(unit_sensor.sensor_id, 900.0)],  # unit meter
         ]
 

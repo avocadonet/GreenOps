@@ -3,7 +3,7 @@ name = "crudx"
 version = "0.1.0"
 description = "simple CRUD library"
 authors = ["alex-vin0 <alexander-vin0@yandex.ru>"]
-packages = []
+packages = [{include = "crudx", from = "src"}]
 
 [tool.poetry.dependencies]
 python = ">=3.12"
@@ -13,6 +13,9 @@ pytest-asyncio = "^1.2.0"
 contextvars = "^2.4"
 aiosqlite = "^0.21.0"
 ruff = "^0.14.6"
+coverage = "^7.13.5"
+pytest-cov = "^6.0.0"
+greenlet = "^3.3.2"
 
 [tool.poetry.group.tests.dependencies]
 
@@ -22,12 +25,12 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = [".", "tests"]
 addopts = [
     "--cov=src",
     "--cov-report=term-missing",
     "--cov-report=html",
-    "--import-mode=importlib"
+    "--import-mode=importlib",
 ]
 
 [tool.coverage.run]

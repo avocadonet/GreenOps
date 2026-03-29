@@ -1,4 +1,8 @@
-from shared.exceptions import EntityAlreadyExistsException, EntityNotFoundException, GreenOpsException
+from shared.exceptions import (
+    EntityAlreadyExistsException,
+    EntityNotFoundException,
+    GreenOpsException,
+)
 
 
 class SensorNotFoundException(EntityNotFoundException):

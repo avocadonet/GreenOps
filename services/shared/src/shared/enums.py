@@ -2,41 +2,41 @@ from enum import StrEnum
 
 
 class BuildingType(StrEnum):
-    RESIDENTIAL = "residential"
-    INDUSTRIAL = "industrial"
+    RESIDENTIAL = "RESIDENTIAL"
+    INDUSTRIAL = "INDUSTRIAL"
 
 
 class SensorType(StrEnum):
-    COMMON = "common"        # attached to a Building (common/house meter)
-    INDIVIDUAL = "individual"  # attached to a Unit (apartment meter)
+    COMMON = "COMMON"  # attached to a Building (common/house meter)
+    INDIVIDUAL = "INDIVIDUAL"  # attached to a Unit (apartment meter)
 
 
 class ThresholdType(StrEnum):
-    UPPER = "upper"
-    LOWER = "lower"
+    UPPER = "UPPER"
+    LOWER = "LOWER"
 
 
 class TariffZone(StrEnum):
-    DAY = "day"
-    NIGHT = "night"
+    DAY = "DAY"
+    NIGHT = "NIGHT"
 
 
 class WindowSize(StrEnum):
-    HOUR = "hour"
-    DAY = "day"
+    HOUR = "HOUR"
+    DAY = "DAY"
 
 
 class IncidentType(StrEnum):
-    OVERLOAD = "overload"
-    LEAK = "leak"
-    IDLE = "idle"
+    OVERLOAD = "OVERLOAD"
+    LEAK = "LEAK"
+    IDLE = "IDLE"
 
 
 class IncidentSeverity(StrEnum):
-    LOW = "low"
-    HIGH = "high"
+    LOW = "LOW"
+    HIGH = "HIGH"
 
 
 class IncidentStatus(StrEnum):
-    OPEN = "open"
-    RESOLVED = "resolved"
+    OPEN = "OPEN"
+    RESOLVED = "RESOLVED"

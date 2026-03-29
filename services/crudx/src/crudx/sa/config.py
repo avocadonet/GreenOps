@@ -19,7 +19,7 @@ class SqlalchemyConfig[CreateDto, Entity, Model]:
     model: type[Model]
 
     not_found: ExcFactory = lambda *args, **kwargs: NotFoundException(**kwargs)
-    unique_constraint_failed: ExcFactory = (
-        lambda *args, **kwargs: UniqueConstraintFailedException(**kwargs)
+    unique_constraint_failed: ExcFactory = lambda *args, **kwargs: (
+        UniqueConstraintFailedException(**kwargs)
     )
     duplicate_key: ExcFactory = lambda *args, **kwargs: DuplicateKeyException(**kwargs)
