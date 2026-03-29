@@ -2,6 +2,9 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from domain.average_load_calculator import AverageLoadCalculator
+from infrastructure.db.average_load.repository import AverageLoadRepository
+from infrastructure.db.metric.repository import MetricReadRepository
+from infrastructure.db.sensor.repository import SensorReadRepository
 from shared.dtos.average_load import CreateAverageLoadDTO
 from shared.enums import WindowSize
 
@@ -11,9 +14,9 @@ logger = logging.getLogger(__name__)
 class AverageLoadService:
     def __init__(
         self,
-        sensors,          # SensorReadRepository
-        metrics,          # MetricReadRepository
-        avg_loads,        # AverageLoadRepository
+        sensors: SensorReadRepository,
+        metrics: MetricReadRepository,
+        avg_loads: AverageLoadRepository,
         calculator: AverageLoadCalculator,
     ) -> None:
         self._sensors = sensors

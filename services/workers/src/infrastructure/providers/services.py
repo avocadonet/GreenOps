@@ -1,6 +1,12 @@
 from application.telemetry.service import EventPublisher, TelemetryService
+from application.transaction import TransactionsGateway
 from dishka import Provider, Scope, provide
+from domain.average_load.repository import AverageLoadReadRepository
+from domain.incident.repository import IncidentRepository
+from domain.metric.repository import MetricRepository
+from domain.peak_load.repository import PeakLoadRepository
 from domain.spike_detector import SpikeDetector
+from domain.threshold.repository import ThresholdReadRepository
 from faststream.kafka import KafkaBroker
 from infrastructure.kafka.publisher import KafkaEventPublisher
 
@@ -17,14 +23,14 @@ class ServiceProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def get_telemetry_service(
         self,
-        metrics,
-        incidents,
-        thresholds,
-        avg_loads,
-        peak_loads,
+        metrics: MetricRepository,
+        incidents: IncidentRepository,
+        thresholds: ThresholdReadRepository,
+        avg_loads: AverageLoadReadRepository,
+        peak_loads: PeakLoadRepository,
         detector: SpikeDetector,
         publisher: EventPublisher,
-        tx,
+        tx: TransactionsGateway,
     ) -> TelemetryService:
         return TelemetryService(
             metrics=metrics,
