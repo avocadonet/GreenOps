@@ -1,4 +1,2 @@
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+# Root conftest — packages (domain, application, infrastructure) are at the project root.
+# No path manipulation needed when running pytest from this directory.

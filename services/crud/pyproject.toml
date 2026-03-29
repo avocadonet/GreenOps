@@ -12,6 +12,7 @@ sqlalchemy = "^2.0.40"
 alembic = "^1.15.2"
 alembic-postgresql-enum = "^1.7.0"
 ruff = "^0.14.4"
+import-linter = "^2.1"
 fastapi = "^0.122.0"
 dishka = "^1.7.2"
 pydantic-settings = "^2.12.0"
@@ -33,3 +34,14 @@ docker = "^7.1.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.importlinter]
+root_packages = ["domain", "application", "infrastructure"]
+
+[[tool.importlinter.contracts]]
+name = "Clean architecture layers"
+type = "layers"
+layers = ["infrastructure", "application", "domain"]
