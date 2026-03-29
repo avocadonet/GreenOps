@@ -1,0 +1,46 @@
+[tool.poetry]
+name = "crudx"
+version = "0.1.0"
+description = "simple CRUD library"
+authors = ["alex-vin0 <alexander-vin0@yandex.ru>"]
+packages = []
+
+[tool.poetry.dependencies]
+python = ">=3.12"
+sqlalchemy = "^2.0.40"
+pytest = "^8.4.2"
+pytest-asyncio = "^1.2.0"
+contextvars = "^2.4"
+aiosqlite = "^0.21.0"
+ruff = "^0.14.6"
+
+[tool.poetry.group.tests.dependencies]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = [
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--import-mode=importlib"
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__"
+]
+show_missing = true
