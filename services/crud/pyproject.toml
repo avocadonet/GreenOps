@@ -8,6 +8,7 @@ authors = ["alex-vin0 <alexander-vin0@yandex.ru>"]
 python = "^3.12"
 fastapi = "^0.122.0"
 uvicorn = "^0.38.0"
+apscheduler = "^3.10.4"
 asyncpg = "^0.31.0"
 sqlalchemy = "^2.0.40"
 alembic = "^1.15.2"

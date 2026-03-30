@@ -7,6 +7,12 @@ from shared.entities.sensor import Sensor
 
 class SensorRepository(ABC):
     @abstractmethod
+    async def list_all(self) -> list[Sensor]: ...
+
+    @abstractmethod
+    async def list_by_building(self, building_id: UUID) -> list[Sensor]: ...
+
+    @abstractmethod
     async def create(self, dto: CreateSensorDTO) -> Sensor: ...
 
     @abstractmethod

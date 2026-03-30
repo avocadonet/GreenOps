@@ -8,6 +8,7 @@ from shared.entities.energy_balance import EnergyBalance
 retort = ConversionRetort()
 
 energy_balance__map_from_db = retort.get_converter(EnergyBalanceModel, EnergyBalance)
+energy_balance__map_to_db = retort.get_converter(EnergyBalance, EnergyBalanceModel)
 energy_balance__create_mapper = retort.get_converter(
     CreateEnergyBalanceDTO,
     EnergyBalanceModel,

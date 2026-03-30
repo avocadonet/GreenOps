@@ -1,11 +1,11 @@
 import logging
 from datetime import datetime, timedelta, timezone
 
+from domain.building.repository import BuildingRepository
+from domain.energy_balance.repository import EnergyBalanceRepository
 from domain.energy_balance_calculator import EnergyBalanceCalculator
-from infrastructure.db.building.repository import BuildingReadRepository
-from infrastructure.db.energy_balance.repository import EnergyBalanceRepository
-from infrastructure.db.metric.repository import MetricReadRepository
-from infrastructure.db.sensor.repository import SensorReadRepository
+from domain.metric.repository import MetricRepository
+from domain.sensor.repository import SensorRepository
 from shared.dtos.energy_balance import CreateEnergyBalanceDTO
 from shared.enums import SensorType
 
@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 class EnergyBalanceService:
     def __init__(
         self,
-        buildings: BuildingReadRepository,
-        sensors: SensorReadRepository,
-        metrics: MetricReadRepository,
+        buildings: BuildingRepository,
+        sensors: SensorRepository,
+        metrics: MetricRepository,
         balances: EnergyBalanceRepository,
         calculator: EnergyBalanceCalculator,
     ) -> None:

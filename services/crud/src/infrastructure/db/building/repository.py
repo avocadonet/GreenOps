@@ -40,6 +40,10 @@ class BuildingDatabaseRepository(
             session, sa_model=BuildingModel, id_attr="building_id"
         )
 
+    async def list_all(self) -> list[Building]:
+        models = await self.gateway.select_by_fields_all()
+        return [self.config.model_mapper(m) for m in models]
+
     @decorators.read
     async def read(self, building_id: UUID) -> Building: ...
 

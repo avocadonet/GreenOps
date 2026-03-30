@@ -40,6 +40,14 @@ class SensorDatabaseRepository(
             session, sa_model=SensorModel, id_attr="sensor_id"
         )
 
+    async def list_all(self) -> list[Sensor]:
+        models = await self.gateway.select_by_fields_all()
+        return [self.config.model_mapper(m) for m in models]
+
+    async def list_by_building(self, building_id: UUID) -> list[Sensor]:
+        models = await self.gateway.select_by_fields_all(building_id=building_id)
+        return [self.config.model_mapper(m) for m in models]
+
     @decorators.read
     async def read(self, sensor_id: UUID) -> Sensor: ...
 

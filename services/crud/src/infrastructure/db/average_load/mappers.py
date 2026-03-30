@@ -8,6 +8,7 @@ from shared.entities.average_load import AverageLoad
 retort = ConversionRetort()
 
 average_load__map_from_db = retort.get_converter(AverageLoadModel, AverageLoad)
+average_load__map_to_db = retort.get_converter(AverageLoad, AverageLoadModel)
 average_load__create_mapper = retort.get_converter(
     CreateAverageLoadDTO,
     AverageLoadModel,

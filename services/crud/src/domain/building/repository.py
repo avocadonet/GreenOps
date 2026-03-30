@@ -7,6 +7,9 @@ from shared.entities.building import Building
 
 class BuildingRepository(ABC):
     @abstractmethod
+    async def list_all(self) -> list[Building]: ...
+
+    @abstractmethod
     async def create(self, dto: CreateBuildingDTO) -> Building: ...
 
     @abstractmethod
