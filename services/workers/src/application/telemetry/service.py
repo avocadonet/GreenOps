@@ -1,13 +1,13 @@
 import logging
 from typing import Protocol
 
-from application.transaction import TransactionsGateway
-from domain.average_load.repository import AverageLoadReadRepository
-from domain.incident.repository import IncidentRepository
-from domain.metric.repository import MetricRepository
-from domain.peak_load.repository import PeakLoadRepository
+from crudx.sa.transaction import AsyncTransactionsDatabaseGateway
 from domain.spike_detector import SpikeDetector
-from domain.threshold.repository import ThresholdReadRepository
+from infrastructure.db.average_load.repository import AverageLoadReadDatabaseRepository
+from infrastructure.db.incident.repository import IncidentDatabaseRepository
+from infrastructure.db.metric.repository import MetricDatabaseRepository
+from infrastructure.db.peak_load.repository import PeakLoadDatabaseRepository
+from infrastructure.db.threshold.repository import ThresholdReadDatabaseRepository
 from shared.dtos.incident import CreateIncidentDTO, IncidentCreatedEvent
 from shared.dtos.metric import CreateMetricDTO
 from shared.dtos.peak_load import CreatePeakLoadDTO
@@ -23,14 +23,14 @@ class EventPublisher(Protocol):
 class TelemetryService:
     def __init__(
         self,
-        metrics: MetricRepository,
-        incidents: IncidentRepository,
-        thresholds: ThresholdReadRepository,
-        avg_loads: AverageLoadReadRepository,
-        peak_loads: PeakLoadRepository,
+        metrics: MetricDatabaseRepository,
+        incidents: IncidentDatabaseRepository,
+        thresholds: ThresholdReadDatabaseRepository,
+        avg_loads: AverageLoadReadDatabaseRepository,
+        peak_loads: PeakLoadDatabaseRepository,
         detector: SpikeDetector,
         publisher: EventPublisher,
-        tx: TransactionsGateway,
+        tx: AsyncTransactionsDatabaseGateway,
     ) -> None:
         self._metrics = metrics
         self._incidents = incidents

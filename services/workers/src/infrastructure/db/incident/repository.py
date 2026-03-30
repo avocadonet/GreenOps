@@ -7,7 +7,6 @@ from crudx.sa.gateway import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from domain.incident.repository import IncidentRepository
 from shared.db.incident import IncidentModel
 from shared.dtos.incident import CreateIncidentDTO
 from shared.entities.incident import Incident
@@ -24,7 +23,6 @@ from . import mappers
     )
 )
 class IncidentDatabaseRepository(
-    IncidentRepository,
     ErrorHandlingSqlAlchemyRepository[CreateIncidentDTO, Incident, IncidentModel],
 ):
     def __init__(self, session: AsyncSession) -> None:

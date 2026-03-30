@@ -1,13 +1,13 @@
 from application.telemetry.service import EventPublisher, TelemetryService
-from application.transaction import TransactionsGateway
+from crudx.sa.transaction import AsyncTransactionsDatabaseGateway
 from dishka import Provider, Scope, provide
-from domain.average_load.repository import AverageLoadReadRepository
-from domain.incident.repository import IncidentRepository
-from domain.metric.repository import MetricRepository
-from domain.peak_load.repository import PeakLoadRepository
 from domain.spike_detector import SpikeDetector
-from domain.threshold.repository import ThresholdReadRepository
 from faststream.kafka import KafkaBroker
+from infrastructure.db.average_load.repository import AverageLoadReadDatabaseRepository
+from infrastructure.db.incident.repository import IncidentDatabaseRepository
+from infrastructure.db.metric.repository import MetricDatabaseRepository
+from infrastructure.db.peak_load.repository import PeakLoadDatabaseRepository
+from infrastructure.db.threshold.repository import ThresholdReadDatabaseRepository
 from infrastructure.kafka.publisher import KafkaEventPublisher
 
 
@@ -23,14 +23,14 @@ class ServiceProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def get_telemetry_service(
         self,
-        metrics: MetricRepository,
-        incidents: IncidentRepository,
-        thresholds: ThresholdReadRepository,
-        avg_loads: AverageLoadReadRepository,
-        peak_loads: PeakLoadRepository,
+        metrics: MetricDatabaseRepository,
+        incidents: IncidentDatabaseRepository,
+        thresholds: ThresholdReadDatabaseRepository,
+        avg_loads: AverageLoadReadDatabaseRepository,
+        peak_loads: PeakLoadDatabaseRepository,
         detector: SpikeDetector,
         publisher: EventPublisher,
-        tx: TransactionsGateway,
+        tx: AsyncTransactionsDatabaseGateway,
     ) -> TelemetryService:
         return TelemetryService(
             metrics=metrics,

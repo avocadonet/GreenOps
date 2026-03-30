@@ -7,7 +7,6 @@ from crudx.sa.gateway import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from domain.peak_load.repository import PeakLoadRepository
 from shared.db.peak_load import PeakLoadModel
 from shared.dtos.peak_load import CreatePeakLoadDTO
 from shared.entities.peak_load import PeakLoad
@@ -24,7 +23,6 @@ from . import mappers
     )
 )
 class PeakLoadDatabaseRepository(
-    PeakLoadRepository,
     ErrorHandlingSqlAlchemyRepository[CreatePeakLoadDTO, PeakLoad, PeakLoadModel],
 ):
     def __init__(self, session: AsyncSession) -> None:

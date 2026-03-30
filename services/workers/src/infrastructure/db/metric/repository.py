@@ -7,7 +7,6 @@ from crudx.sa.gateway import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from domain.metric.repository import MetricRepository
 from shared.db.metric import MetricModel
 from shared.dtos.metric import CreateMetricDTO
 from shared.entities.metric import Metric
@@ -24,7 +23,6 @@ from . import mappers
     )
 )
 class MetricDatabaseRepository(
-    MetricRepository,
     ErrorHandlingSqlAlchemyRepository[CreateMetricDTO, Metric, MetricModel],
 ):
     def __init__(self, session: AsyncSession) -> None:
