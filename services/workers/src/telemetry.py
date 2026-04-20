@@ -1,23 +1,22 @@
 import logging
-from typing import Protocol
 
 from crudx.sa.transaction import AsyncTransactionsDatabaseGateway
-from domain.spike_detector import SpikeDetector
-from infrastructure.db.average_load.repository import AverageLoadReadDatabaseRepository
-from infrastructure.db.incident.repository import IncidentDatabaseRepository
-from infrastructure.db.metric.repository import MetricDatabaseRepository
-from infrastructure.db.peak_load.repository import PeakLoadDatabaseRepository
-from infrastructure.db.threshold.repository import ThresholdReadDatabaseRepository
 from shared.dtos.incident import CreateIncidentDTO, IncidentCreatedEvent
 from shared.dtos.metric import CreateMetricDTO
 from shared.dtos.peak_load import CreatePeakLoadDTO
 from shared.enums import IncidentSeverity
 
+from kafka_publisher import KafkaEventPublisher
+from repositories import (
+    AverageLoadReadDatabaseRepository,
+    IncidentDatabaseRepository,
+    MetricDatabaseRepository,
+    PeakLoadDatabaseRepository,
+    ThresholdReadDatabaseRepository,
+)
+from spike_detector import SpikeDetector
+
 logger = logging.getLogger(__name__)
-
-
-class EventPublisher(Protocol):
-    async def publish_incident(self, event: IncidentCreatedEvent) -> None: ...
 
 
 class TelemetryService:
@@ -29,7 +28,7 @@ class TelemetryService:
         avg_loads: AverageLoadReadDatabaseRepository,
         peak_loads: PeakLoadDatabaseRepository,
         detector: SpikeDetector,
-        publisher: EventPublisher,
+        publisher: KafkaEventPublisher,
         tx: AsyncTransactionsDatabaseGateway,
     ) -> None:
         self._metrics = metrics

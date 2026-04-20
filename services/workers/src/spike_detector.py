@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from shared.entities.average_load import AverageLoad
-from shared.entities.threshold import Threshold
+from shared.db.average_load import AverageLoadModel
+from shared.db.threshold import ThresholdModel
 from shared.enums import IncidentType, ThresholdType
 
 
@@ -20,8 +20,8 @@ class SpikeDetector:
         self,
         value: float,
         duration_seconds: float,
-        threshold: Threshold,
-        baseline: AverageLoad | None,
+        threshold: ThresholdModel,
+        baseline: AverageLoadModel | None,
     ) -> SpikeResult | None:
         if (
             threshold.threshold_type == ThresholdType.UPPER

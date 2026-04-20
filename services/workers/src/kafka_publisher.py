@@ -1,8 +1,8 @@
 import logging
+
 from adaptix import Retort
 from faststream.kafka import KafkaBroker
 
-from application.telemetry.service import EventPublisher
 from shared.dtos.incident import IncidentCreatedEvent
 
 logger = logging.getLogger(__name__)
@@ -10,7 +10,7 @@ _retort = Retort()
 
 
 class KafkaEventPublisher:
-    """Implements EventPublisher protocol via FastStream KafkaBroker."""
+    """Publishes domain events to Kafka topics via FastStream KafkaBroker."""
 
     def __init__(self, broker: KafkaBroker) -> None:
         self._broker = broker

@@ -1,13 +1,13 @@
 import unittest
 from uuid import uuid4
 
-from domain.spike_detector import SpikeDetector
-from shared.entities.threshold import Threshold
+from shared.db.threshold import ThresholdModel
 from shared.enums import IncidentType, TariffZone, ThresholdType
+from spike_detector import SpikeDetector
 
 
-def _upper_threshold(limit: float) -> Threshold:
-    return Threshold(
+def _upper_threshold(limit: float) -> ThresholdModel:
+    return ThresholdModel(
         threshold_id=uuid4(),
         sensor_id=uuid4(),
         limit_value=limit,
@@ -16,8 +16,8 @@ def _upper_threshold(limit: float) -> Threshold:
     )
 
 
-def _lower_threshold(limit: float) -> Threshold:
-    return Threshold(
+def _lower_threshold(limit: float) -> ThresholdModel:
+    return ThresholdModel(
         threshold_id=uuid4(),
         sensor_id=uuid4(),
         limit_value=limit,
