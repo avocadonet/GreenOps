@@ -58,6 +58,7 @@ services:
     container_name: greenops_crud
     environment:
       DATABASE_URL: postgresql+asyncpg://user:password@postgres:5432/greenops_db
+      JWT_SECRET_KEY: change-me-in-production
     ports:
       - "8000:8000"
     depends_on:
@@ -80,21 +81,6 @@ services:
       postgres:
         condition: service_healthy
       kafka:
-        condition: service_healthy
-      migrations:
-        condition: service_completed_successfully
-    restart: unless-stopped
-
-  # ── Analytics / CRON ─────────────────────────────────────────────────────────
-  analytics:
-    build:
-      context: .
-      dockerfile: services/analytics/Dockerfile
-    container_name: greenops_analytics
-    environment:
-      DATABASE_URL: postgresql+asyncpg://user:password@postgres:5432/greenops_db
-    depends_on:
-      postgres:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully

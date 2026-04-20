@@ -12,7 +12,7 @@ class AverageLoadModel(Base):
     __tablename__ = "average_loads"
 
     avg_load_id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    sensor_id: Mapped[UUID] = mapped_column(ForeignKey("sensors.sensor_id"))
+    sensor_id: Mapped[UUID] = mapped_column(ForeignKey("sensors.sensor_id", ondelete="CASCADE"))
     window_size: Mapped[WindowSize] = mapped_column(
         SAEnum(WindowSize, name="window_size_enum")
     )

@@ -21,8 +21,8 @@ class SensorModel(Base):
     # Exactly one of building_id / unit_id must be set.
     # The XOR constraint is enforced in the service layer (MVP trade-off).
     building_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("buildings.building_id"), nullable=True
+        ForeignKey("buildings.building_id", ondelete="CASCADE"), nullable=True
     )
     unit_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("units.unit_id"), nullable=True
+        ForeignKey("units.unit_id", ondelete="CASCADE"), nullable=True
     )

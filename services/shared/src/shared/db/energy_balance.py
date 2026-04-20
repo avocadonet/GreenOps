@@ -11,7 +11,7 @@ class EnergyBalanceModel(Base):
     __tablename__ = "energy_balances"
 
     balance_id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    building_id: Mapped[UUID] = mapped_column(ForeignKey("buildings.building_id"))
+    building_id: Mapped[UUID] = mapped_column(ForeignKey("buildings.building_id", ondelete="CASCADE"))
     period_start: Mapped[datetime]
     period_end: Mapped[datetime]
     loss_kwh: Mapped[float]

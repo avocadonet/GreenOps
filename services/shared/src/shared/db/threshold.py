@@ -11,7 +11,7 @@ class ThresholdModel(Base):
     __tablename__ = "thresholds"
 
     threshold_id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    sensor_id: Mapped[UUID] = mapped_column(ForeignKey("sensors.sensor_id"))
+    sensor_id: Mapped[UUID] = mapped_column(ForeignKey("sensors.sensor_id", ondelete="CASCADE"))
     limit_value: Mapped[float]
     threshold_type: Mapped[ThresholdType] = mapped_column(
         SAEnum(ThresholdType, name="threshold_type_enum")

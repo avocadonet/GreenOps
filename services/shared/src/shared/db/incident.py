@@ -22,8 +22,8 @@ class IncidentModel(Base):
         default=IncidentStatus.OPEN,
     )
     threshold_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("thresholds.threshold_id"), nullable=True
+        ForeignKey("thresholds.threshold_id", ondelete="SET NULL"), nullable=True
     )
     peak_load_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("peak_loads.peak_id"), nullable=True
+        ForeignKey("peak_loads.peak_id", ondelete="SET NULL"), nullable=True
     )
