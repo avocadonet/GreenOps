@@ -1,18 +1,29 @@
 from uuid import UUID
 
+from application.auth.enums import PermissionsEnum
 from application.unit.service import UnitService
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from infrastructure.api.dependencies import require_permission
 from infrastructure.api.schemas import ErrorModel
 
 from . import mappers
 from .schemas import CreateUnitRequest, UnitResponse, UpdateUnitRequest
 
-router = APIRouter(prefix="/units", route_class=DishkaRoute, tags=["units"])
+router = APIRouter(
+    prefix="/units",
+    route_class=DishkaRoute,
+    tags=["units"],
+)
 
 
-@router.post("", response_model=UnitResponse, status_code=201)
+@router.post(
+    "",
+    response_model=UnitResponse,
+    status_code=201,
+    dependencies=[Depends(require_permission(PermissionsEnum.CAN_CREATE_UNIT))],
+)
 async def create_unit(
     body: CreateUnitRequest,
     service: FromDishka[UnitService],
@@ -23,7 +34,10 @@ async def create_unit(
 
 
 @router.get(
-    "/{unit_id}", response_model=UnitResponse, responses={404: {"model": ErrorModel}}
+    "/{unit_id}",
+    response_model=UnitResponse,
+    responses={404: {"model": ErrorModel}},
+    dependencies=[Depends(require_permission(PermissionsEnum.CAN_READ_UNIT))],
 )
 async def read_unit(
     unit_id: UUID,
@@ -33,7 +47,10 @@ async def read_unit(
 
 
 @router.put(
-    "/{unit_id}", response_model=UnitResponse, responses={404: {"model": ErrorModel}}
+    "/{unit_id}",
+    response_model=UnitResponse,
+    responses={404: {"model": ErrorModel}},
+    dependencies=[Depends(require_permission(PermissionsEnum.CAN_UPDATE_UNIT))],
 )
 async def update_unit(
     unit_id: UUID,
@@ -46,7 +63,10 @@ async def update_unit(
 
 
 @router.delete(
-    "/{unit_id}", response_model=UnitResponse, responses={404: {"model": ErrorModel}}
+    "/{unit_id}",
+    response_model=UnitResponse,
+    responses={404: {"model": ErrorModel}},
+    dependencies=[Depends(require_permission(PermissionsEnum.CAN_DELETE_UNIT))],
 )
 async def delete_unit(
     unit_id: UUID,

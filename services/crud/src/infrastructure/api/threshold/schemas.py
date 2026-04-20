@@ -12,6 +12,10 @@ class CreateThresholdRequest(BaseModel):
     tariff_zone: TariffZone
 
 
+class UpdateThresholdRequest(BaseModel):
+    limit_value: float
+
+
 class ThresholdResponse(BaseModel):
     threshold_id: UUID
     sensor_id: UUID

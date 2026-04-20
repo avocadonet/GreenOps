@@ -19,6 +19,12 @@ class ThresholdService:
     async def read(self, threshold_id: UUID) -> Threshold:
         return await self._repository.read(threshold_id)
 
+    async def update(self, threshold_id: UUID, limit_value: float) -> Threshold:
+        async with self._tx:
+            threshold = await self._repository.read(threshold_id)
+            threshold.limit_value = limit_value
+            return await self._repository.update(threshold)
+
     async def delete(self, threshold_id: UUID) -> Threshold:
         async with self._tx:
             threshold = await self._repository.read(threshold_id)

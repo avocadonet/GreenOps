@@ -1,3 +1,4 @@
+from datetime import date
 from uuid import UUID
 
 from application.transaction import TransactionsGateway
@@ -19,6 +20,16 @@ class SensorService:
 
     async def read(self, sensor_id: UUID) -> Sensor:
         return await self._repository.read(sensor_id)
+
+    async def update(
+        self, sensor_id: UUID, serial_number: str, model: str, calibration_date: date
+    ) -> Sensor:
+        async with self._tx:
+            sensor = await self._repository.read(sensor_id)
+            sensor.serial_number = serial_number
+            sensor.model = model
+            sensor.calibration_date = calibration_date
+            return await self._repository.update(sensor)
 
     async def delete(self, sensor_id: UUID) -> Sensor:
         async with self._tx:

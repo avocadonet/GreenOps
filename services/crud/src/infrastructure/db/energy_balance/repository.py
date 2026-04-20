@@ -1,3 +1,6 @@
+from datetime import datetime
+from uuid import UUID
+
 from crudx.sa import decorators
 from crudx.sa.config import SqlalchemyConfig
 from crudx.sa.gateway import (
@@ -5,6 +8,7 @@ from crudx.sa.gateway import (
     ErrorHandlingSqlAlchemyRepository,
     provide,
 )
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.energy_balance.repository import EnergyBalanceRepository
@@ -33,6 +37,23 @@ class EnergyBalanceDatabaseRepository(
         self.gateway = AsyncSqlAlchemyGateway(
             session, sa_model=EnergyBalanceModel, id_attr="balance_id"
         )
+        self._session = session
 
     @decorators.create
     async def create(self, dto: CreateEnergyBalanceDTO) -> EnergyBalance: ...
+
+    async def list_by_building(
+        self,
+        building_id: UUID,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+    ) -> list[EnergyBalance]:
+        stmt = select(EnergyBalanceModel).where(
+            EnergyBalanceModel.building_id == building_id
+        )
+        if date_from is not None:
+            stmt = stmt.where(EnergyBalanceModel.period_start >= date_from)
+        if date_to is not None:
+            stmt = stmt.where(EnergyBalanceModel.period_end <= date_to)
+        result = await self._session.execute(stmt)
+        return [self.config.model_mapper(m) for m in result.scalars().all()]

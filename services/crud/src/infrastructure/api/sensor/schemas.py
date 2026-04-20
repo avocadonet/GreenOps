@@ -15,6 +15,12 @@ class CreateSensorRequest(BaseModel):
     unit_id: UUID | None = None
 
 
+class UpdateSensorRequest(BaseModel):
+    serial_number: str
+    model: str
+    calibration_date: date
+
+
 class SensorResponse(BaseModel):
     sensor_id: UUID
     serial_number: str

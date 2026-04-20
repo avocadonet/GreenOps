@@ -1,5 +1,6 @@
 from dishka import AsyncContainer, make_async_container
 
+from infrastructure.providers.auth import AuthProvider
 from infrastructure.providers.config import ConfigProvider
 from infrastructure.providers.database import DatabaseProvider
 from infrastructure.providers.repositories import RepositoriesProvider
@@ -12,4 +13,5 @@ def create_container() -> AsyncContainer:
         DatabaseProvider(),
         RepositoriesProvider(),
         ServiceProvider(),
+        AuthProvider(),
     )
