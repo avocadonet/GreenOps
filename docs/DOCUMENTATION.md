@@ -27,7 +27,7 @@ GreenOps is an event-driven microservices platform for real-time energy consumpt
 - Continuous ingestion of high-frequency sensor telemetry without blocking API serving
 - Real-time spike detection and incident creation across heterogeneous sensor types
 - Energy loss computation (difference between common building-level consumption and the sum of individual unit consumption)
-- Role-based access control so building owners, administrators, and redactors each see only what they need
+- Role-based access control with both global roles and per-organization roles so building owners, administrators, and redactors each see only what they need
 
 **Target audience:** Back-end and full-stack engineers studying production-grade Python microservices; smart city / energy management operators.
 
@@ -39,7 +39,7 @@ GreenOps is an event-driven microservices platform for real-time energy consumpt
 
 | Service | Responsibility |
 |---|---|
-| **crud** | Control-plane REST API — manage buildings, units, sensors, thresholds, users; schedule background analytics jobs |
+| **crud** | Control-plane REST API — manage organizations, buildings, units, sensors, thresholds, users; schedule background analytics jobs |
 | **workers** | Data-plane — consume Kafka events, persist metrics, detect spikes, publish incidents |
 | **shared** | Python package containing shared domain entities, DTOs, SQLAlchemy models, and Alembic migrations |
 | **crudx** | Internal CRUD helper library on top of SQLAlchemy 2.0 async |
@@ -68,8 +68,9 @@ IoT Sensors / simulator.py
                           │
 ┌───────────────────────────────────────────┐
 │        PostgreSQL  (shared schema)        │
-│  buildings · units · sensors · metrics    │
-│  thresholds · energy_balances · users …   │
+│  organizations · buildings · units        │
+│  sensors · metrics · thresholds           │
+│  energy_balances · users …                │
 └──────────────────┬────────────────────────┘
                    │
          ┌─────────┴──────────┐
@@ -87,7 +88,7 @@ IoT Sensors / simulator.py
 
 ### 2.3 Layered Design (crud service)
 
-Each vertical (building, sensor, unit, etc.) follows the same three-layer pattern:
+Each vertical (organization, building, sensor, unit, etc.) follows the same three-layer pattern:
 
 ```
 infrastructure/api/<domain>/router.py   ← HTTP boundary (FastAPI)
@@ -98,7 +99,11 @@ infrastructure/db/<domain>/repository.py← Concrete SQLAlchemy implementation
 
 Dependency injection (Dishka) wires the concrete implementations to the ABCs at startup, so the application layer never imports infrastructure.
 
-### 2.4 Key Design Patterns
+### 2.4 Multi-Tenancy
+
+Resources (buildings, units, sensors, thresholds) each carry a nullable `organization_id` FK. When it is set, permission checks are performed against the requesting user's role within that organization (`UserOrganizationRoleModel`). When it is `null` the check falls back to the user's global role. This allows a gradual migration from a flat global role model to full multi-tenancy.
+
+### 2.5 Key Design Patterns
 
 - **Clean / Hexagonal Architecture** — domain layer has zero infrastructure imports
 - **Repository Pattern** — each aggregate has an ABC repository; infrastructure implements it
@@ -196,6 +201,8 @@ Base URL: `http://localhost/api` (through Nginx) or `http://localhost:8000` (dir
 
 Interactive docs: `GET /docs` (Swagger UI), `GET /redoc`
 
+All endpoints are versioned under `/v1`: `GET /api/v1/buildings`, etc.
+
 ### 4.1 Authentication
 
 All non-auth endpoints require a Bearer JWT in the `Authorization` header:
@@ -219,7 +226,11 @@ Create a new user account.
 **Response `201`**
 
 ```json
-{ "user_id": 42, "email": "user@example.com" }
+{
+  "message": "User registered. Activate your account to log in.",
+  "user_id": 42,
+  "email": "user@example.com"
+}
 ```
 
 **Errors**
@@ -261,11 +272,101 @@ Authenticate and obtain a token pair.
 
 ---
 
-### 4.2 Buildings
+### 4.2 Organizations
+
+#### `GET /organizations` — List
+
+**Permission:** `CAN_READ_ORGANIZATION` (global role)
+
+**Query parameters:**
+
+| Param | Type | Default |
+|---|---|---|
+| `page` | `int` | `1` |
+| `page_size` | `int` | `20` |
+
+**Response `200`** — `PaginatedResponse[OrganizationResponse]`
+
+---
+
+#### `POST /organizations` — Create
+
+**Permission:** `CAN_CREATE_ORGANIZATION` (global role — SUPER_* only)
+
+The `owner_id` is set automatically from the authenticated user's identity.
+
+**Request body**
+
+| Field | Type | Required |
+|---|---|---|
+| `name` | `str` | Yes |
+| `description` | `str \| null` | No |
+| `contact_email` | `str \| null` | No |
+
+**Response `201`** — `OrganizationResponse`
+
+```json
+{
+  "id": 1,
+  "name": "Acme Corp",
+  "owner_id": 42,
+  "description": "Main organization",
+  "contact_email": "ops@acme.io",
+  "created_at": "2026-05-02T12:00:00Z"
+}
+```
+
+---
+
+#### `GET /organizations/{org_id}` — Read
+
+**Permission:** `CAN_READ_ORGANIZATION` (org-scoped — `ORGANIZATION_OWNER` or higher within the org)
+
+**Errors:** `404` if not found
+
+---
+
+#### `PUT /organizations/{org_id}` — Update
+
+**Permission:** `CAN_UPDATE_ORGANIZATION` (org-scoped)
+
+**Request body** — same fields as Create (all optional, `name` required)
+
+**Response `200`** — `OrganizationResponse`
+
+---
+
+#### `DELETE /organizations/{org_id}` — Delete
+
+**Permission:** `CAN_DELETE_ORGANIZATION` (org-scoped)
+
+**Response `200`** — deleted `OrganizationResponse`
+
+---
+
+### 4.3 Buildings
+
+#### `GET /buildings` — List
+
+**Permission:** `CAN_READ_BUILDING`  
+When `organization_id` is provided the check is org-scoped; otherwise global.
+
+**Query parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `organization_id` | `int \| null` | Filter by organization |
+| `page` | `int` | Default `1` |
+| `page_size` | `int` | Default `20`, max `100` |
+
+**Response `200`** — `PaginatedResponse[BuildingResponse]`
+
+---
 
 #### `POST /buildings` — Create
 
-**Permission:** `CAN_CREATE_BUILDING`
+**Permission:** `CAN_CREATE_BUILDING`  
+When `organization_id` is provided the check is org-scoped; otherwise global.
 
 **Request body**
 
@@ -274,6 +375,7 @@ Authenticate and obtain a token pair.
 | `address` | `str` | Free text |
 | `building_type` | `BuildingType` | `RESIDENTIAL`, `INDUSTRIAL` |
 | `total_area` | `float` | Square metres |
+| `organization_id` | `int \| null` | Organization this building belongs to |
 
 **Response `201`** — `BuildingResponse`
 
@@ -282,7 +384,8 @@ Authenticate and obtain a token pair.
   "building_id": "3fa85f64-...",
   "address": "Main St 1",
   "building_type": "RESIDENTIAL",
-  "total_area": 1200.5
+  "total_area": 1200.5,
+  "organization_id": 1
 }
 ```
 
@@ -290,9 +393,7 @@ Authenticate and obtain a token pair.
 
 #### `GET /buildings/{building_id}` — Read
 
-**Permission:** `CAN_READ_BUILDING`
-
-**Path params:** `building_id` — UUID
+**Permission:** `CAN_READ_BUILDING` (org-scoped if building has `organization_id`)
 
 **Response `200`** — `BuildingResponse`
 
@@ -302,9 +403,14 @@ Authenticate and obtain a token pair.
 
 #### `PUT /buildings/{building_id}` — Update
 
-**Permission:** `CAN_UPDATE_BUILDING`
+**Permission:** `CAN_UPDATE_BUILDING` (org-scoped if building has `organization_id`)
 
-**Request body** — same fields as Create (all required)
+**Request body**
+
+| Field | Type |
+|---|---|
+| `address` | `str` |
+| `total_area` | `float` |
 
 **Response `200`** — `BuildingResponse`
 
@@ -312,17 +418,35 @@ Authenticate and obtain a token pair.
 
 #### `DELETE /buildings/{building_id}` — Delete
 
-**Permission:** `CAN_DELETE_BUILDING`
+**Permission:** `CAN_DELETE_BUILDING` (org-scoped if building has `organization_id`)
 
-**Response `204`**
+**Response `200`** — deleted `BuildingResponse`
 
 ---
 
-### 4.3 Units
+### 4.4 Units
 
-Same CRUD shape as Buildings. Endpoint prefix: `/units`.
+#### `GET /units` — List
 
-**Extra fields in create:**
+**Permission:** `CAN_READ_UNIT`  
+When `organization_id` is provided the check is org-scoped; otherwise global.
+
+**Query parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `building_id` | `UUID \| null` | Filter by building |
+| `organization_id` | `int \| null` | Filter by organization |
+| `page` | `int` | Default `1` |
+| `page_size` | `int` | Default `20`, max `100` |
+
+---
+
+#### `POST /units` — Create
+
+**Permission:** `CAN_CREATE_UNIT` (org-scoped if `organization_id` set)
+
+**Request body**
 
 | Field | Type | Description |
 |---|---|---|
@@ -330,14 +454,36 @@ Same CRUD shape as Buildings. Endpoint prefix: `/units`.
 | `unit_number` | `str` | Apartment / office number |
 | `floor` | `int` | Floor number |
 | `owner_name` | `str` | Tenant / owner name |
+| `organization_id` | `int \| null` | Organization this unit belongs to |
+
+**Response `201`** — `UnitResponse`
 
 ---
 
-### 4.4 Sensors
+`GET /units/{unit_id}`, `PUT /units/{unit_id}`, `DELETE /units/{unit_id}` follow the same pattern as Buildings. Permission checks are org-scoped when the unit has `organization_id`.
+
+---
+
+### 4.5 Sensors
+
+#### `GET /sensors` — List
+
+**Permission:** `CAN_READ_SENSOR`  
+When `organization_id` is provided the check is org-scoped; otherwise global.
+
+**Query parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `organization_id` | `int \| null` | Filter by organization |
+| `page` | `int` | Default `1` |
+| `page_size` | `int` | Default `20`, max `100` |
+
+---
 
 #### `POST /sensors` — Create
 
-**Permission:** `CAN_CREATE_SENSOR`
+**Permission:** `CAN_CREATE_SENSOR` (org-scoped if `organization_id` set)
 
 **Request body**
 
@@ -349,6 +495,7 @@ Same CRUD shape as Buildings. Endpoint prefix: `/units`.
 | `sensor_type` | `SensorType` | `COMMON` or `INDIVIDUAL` |
 | `building_id` | `UUID \| null` | Required for `COMMON` sensors |
 | `unit_id` | `UUID \| null` | Required for `INDIVIDUAL` sensors |
+| `organization_id` | `int \| null` | Organization this sensor belongs to |
 
 > **Attachment constraint (XOR):** exactly one of `building_id` / `unit_id` must be set.  
 > `COMMON` sensors attach to a building; `INDIVIDUAL` sensors attach to a unit.  
@@ -358,34 +505,35 @@ Same CRUD shape as Buildings. Endpoint prefix: `/units`.
 
 ---
 
-#### `GET /sensors/{sensor_id}` — Read
-
-**Permission:** `CAN_READ_SENSOR`
-
-**Response `200`** — `SensorResponse`
-
----
-
-#### `PUT /sensors/{sensor_id}` — Update
-
-**Permission:** `CAN_UPDATE_SENSOR`
+`GET /sensors/{sensor_id}`, `PUT /sensors/{sensor_id}`, `DELETE /sensors/{sensor_id}` follow the same pattern as Buildings. Permission checks are org-scoped when the sensor has `organization_id`.
 
 Updatable fields: `serial_number`, `model`, `calibration_date`.  
 Sensor type and attachment cannot be changed after creation.
 
 ---
 
-#### `DELETE /sensors/{sensor_id}` — Delete
+### 4.6 Thresholds
 
-**Permission:** `CAN_DELETE_SENSOR`
+#### `GET /thresholds` — List
+
+**Permission:** `CAN_READ_THRESHOLD`
+
+**Query parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `sensor_id` | `UUID \| null` | Filter by sensor |
+| `organization_id` | `int \| null` | Filter by organization |
+| `page` | `int` | Default `1` |
+| `page_size` | `int` | Default `20`, max `100` |
 
 ---
 
-### 4.5 Thresholds
+#### `POST /thresholds` — Create
 
-Endpoint prefix: `/thresholds`. Permission prefix: `CAN_*_THRESHOLD`.
+**Permission:** `CAN_CREATE_THRESHOLD` (org-scoped if `organization_id` set)
 
-**Create fields:**
+**Request body**
 
 | Field | Type | Values |
 |---|---|---|
@@ -393,20 +541,28 @@ Endpoint prefix: `/thresholds`. Permission prefix: `CAN_*_THRESHOLD`.
 | `limit_value` | `float` | Threshold value |
 | `threshold_type` | `ThresholdType` | `UPPER`, `LOWER` |
 | `tariff_zone` | `TariffZone` | `DAY`, `NIGHT` |
+| `organization_id` | `int \| null` | Organization this threshold belongs to |
 
 ---
 
-### 4.6 Energy Balances
+`GET /thresholds/{threshold_id}`, `PUT /thresholds/{threshold_id}`, `DELETE /thresholds/{threshold_id}` follow the same pattern.
+
+Updatable fields: `limit_value`.
+
+---
+
+### 4.7 Energy Balances
 
 #### `GET /energy-balances`
 
-**Permission:** `CAN_READ_ENERGY_BALANCE`
+**Permission:** `CAN_READ_ENERGY_BALANCE`  
+The check is org-scoped when the referenced building belongs to an organization; otherwise global.
 
 **Query parameters:**
 
 | Param | Type | Description |
 |---|---|---|
-| `building_id` | `UUID` | Filter by building |
+| `building_id` | `UUID` | Required — filter by building |
 | `date_from` | `datetime` | Range start (ISO-8601) |
 | `date_to` | `datetime` | Range end (ISO-8601) |
 
@@ -427,7 +583,7 @@ Energy balances are computed automatically by a background job (daily at 00:10).
 
 ---
 
-### 4.7 Error Response Shape
+### 4.8 Error Response Shape
 
 All error responses follow this envelope:
 
@@ -446,7 +602,9 @@ All error responses follow this envelope:
 
 ---
 
-### 4.8 Permission Matrix
+### 4.9 Permission Matrix
+
+#### Global roles
 
 | Permission | PUBLIC | OWNER | REDACTOR | ADMIN | SUPER_* |
 |---|---|---|---|---|---|
@@ -454,25 +612,39 @@ All error responses follow this envelope:
 | Create/Update/Delete threshold | — | — | ✓ | ✓ | ✓ |
 | Full CRUD building/unit/sensor | — | — | — | ✓ | ✓ |
 | Read energy balance | — | ✓ | ✓ | ✓ | ✓ |
+| Read/Update/Delete organization | — | — | — | — | ✓ |
+| Create organization | — | — | — | — | ✓ |
 | User & role management | — | — | — | — | ✓ |
+
+#### Organization-scoped role (`ORGANIZATION_OWNER`)
+
+Assigned per-organization via `UserOrganizationRoleModel`. When a resource belongs to an organization, the permission check uses this role instead of the global role.
+
+| Permission | ORGANIZATION_OWNER |
+|---|---|
+| Read/Update/Delete organization | ✓ |
+| Create organization | — |
+| Full CRUD building/unit/sensor/threshold | ✓ |
+| Read energy balance | ✓ |
+| User & role management | — |
 
 ---
 
-### 4.9 Internal Module Reference
+### 4.10 Internal Module Reference
 
-#### `application/auth/usecases/`
+#### `application/auth/services.py` — `AuthService`
 
-| Class | `__call__` signature | Description |
+| Method | Signature | Description |
 |---|---|---|
-| `AuthenticateUseCase` | `(AuthenticateUserDto) → User` | Look up user by email, verify bcrypt password |
-| `AuthorizeUseCase` | `(token: str) → User` | Validate JWT, return the authenticated user |
-| `LoginUseCase` | `(AuthenticateUserDto) → (User, TokenPairDto)` | Authenticate + create token pair |
-| `RegisterUseCase` | `(RegisterUserDto) → User` | Hash password, create user, return entity |
-| `CreateTokenPairUseCase` | `(subject: str) → TokenPairDto` | Sign access + refresh JWTs |
+| `login` | `(AuthenticateUserDto) → (User, TokenPairDto)` | Verify bcrypt password, create token pair |
+| `register` | `(RegisterUserDto) → User` | Hash password, create user |
+| `authorize` | `(TokenInfoDto) → User` | Validate JWT subject, return active user |
 
 #### `application/<domain>/service.py`
 
-Each service exposes `create / read / update / delete` methods that accept DTOs, delegate to the repository, and raise domain exceptions on errors.
+Each service exposes `create / read / list_all / update / delete` methods that accept a `User` for permission checks plus DTOs, delegate to the repository, and raise domain exceptions on errors.
+
+All services support org-scoped permission checks: when the relevant `organization_id` is not `None`, permissions are evaluated against the user's `ORGANIZATION_OWNER` role for that org. Otherwise the global role is used.
 
 `AverageLoadService.run_hourly()` — computes `mean(metric.value)` per sensor over the previous hour and persists an `AverageLoad` record.
 
@@ -483,6 +655,8 @@ loss_percent = (common_kwh - sum(individual_kwh)) / common_kwh * 100
 ```
 
 and persists an `EnergyBalance` record.
+
+`EnergyBalanceService.list_by_building(user, building_id, date_from, date_to)` — reads the building to resolve its `organization_id`, performs org-scoped or global `CAN_READ_ENERGY_BALANCE` check, then queries the repository.
 
 #### `workers/src/telemetry.py` — `TelemetryService`
 
@@ -514,54 +688,60 @@ Decorators (`@decorators.create`, etc.) wrap repository methods to handle `Integ
 
 ```bash
 # 1. Register
-curl -X POST http://localhost/api/auth/register \
+curl -X POST http://localhost/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"ops@city.io","password":"s3cret","fullname":"Ops User"}'
 
 # 2. Login
-TOKEN=$(curl -s -X POST http://localhost/api/auth/login \
+TOKEN=$(curl -s -X POST http://localhost/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"ops@city.io","password":"s3cret"}' \
   | jq -r '.access_token')
 
 # 3. Use token
 curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost/api/buildings/<uuid>
+  http://localhost/api/v1/buildings/<uuid>
 ```
 
-### 5.2 Provision a Building → Unit → Sensor → Threshold
+### 5.2 Create an Organization and Provision Resources Under It
 
 ```bash
 AUTH="Authorization: Bearer $TOKEN"
 
-# 1. Create building
-BLD=$(curl -s -X POST http://localhost/api/buildings \
+# 1. Create organization (requires SUPER_* role)
+ORG=$(curl -s -X POST http://localhost/api/v1/organizations \
   -H "$AUTH" -H "Content-Type: application/json" \
-  -d '{"address":"Main St 1","building_type":"RESIDENTIAL","total_area":1200}' \
+  -d '{"name":"Acme Corp","contact_email":"ops@acme.io"}' \
+  | jq -r '.id')
+
+# 2. Create building inside organization
+BLD=$(curl -s -X POST http://localhost/api/v1/buildings \
+  -H "$AUTH" -H "Content-Type: application/json" \
+  -d "{\"address\":\"Main St 1\",\"building_type\":\"RESIDENTIAL\",\"total_area\":1200,\"organization_id\":$ORG}" \
   | jq -r '.building_id')
 
-# 2. Create unit inside building
-UNIT=$(curl -s -X POST http://localhost/api/units \
+# 3. Create unit inside building
+UNIT=$(curl -s -X POST http://localhost/api/v1/units \
   -H "$AUTH" -H "Content-Type: application/json" \
-  -d "{\"building_id\":\"$BLD\",\"unit_number\":\"101\",\"floor\":1,\"owner_name\":\"Alice\"}" \
+  -d "{\"building_id\":\"$BLD\",\"unit_number\":\"101\",\"floor\":1,\"owner_name\":\"Alice\",\"organization_id\":$ORG}" \
   | jq -r '.unit_id')
 
-# 3. Create a COMMON (building-level) sensor
-BSENSOR=$(curl -s -X POST http://localhost/api/sensors \
+# 4. Create a COMMON (building-level) sensor
+BSENSOR=$(curl -s -X POST http://localhost/api/v1/sensors \
   -H "$AUTH" -H "Content-Type: application/json" \
-  -d "{\"serial_number\":\"SN-001\",\"model\":\"EM-3000\",\"calibration_date\":\"2024-01-01\",\"sensor_type\":\"COMMON\",\"building_id\":\"$BLD\"}" \
+  -d "{\"serial_number\":\"SN-001\",\"model\":\"EM-3000\",\"calibration_date\":\"2024-01-01\",\"sensor_type\":\"COMMON\",\"building_id\":\"$BLD\",\"organization_id\":$ORG}" \
   | jq -r '.sensor_id')
 
-# 4. Create an INDIVIDUAL (unit-level) sensor
-USENSOR=$(curl -s -X POST http://localhost/api/sensors \
+# 5. Create an INDIVIDUAL (unit-level) sensor
+USENSOR=$(curl -s -X POST http://localhost/api/v1/sensors \
   -H "$AUTH" -H "Content-Type: application/json" \
-  -d "{\"serial_number\":\"SN-002\",\"model\":\"EM-1000\",\"calibration_date\":\"2024-01-01\",\"sensor_type\":\"INDIVIDUAL\",\"unit_id\":\"$UNIT\"}" \
+  -d "{\"serial_number\":\"SN-002\",\"model\":\"EM-1000\",\"calibration_date\":\"2024-01-01\",\"sensor_type\":\"INDIVIDUAL\",\"unit_id\":\"$UNIT\",\"organization_id\":$ORG}" \
   | jq -r '.sensor_id')
 
-# 5. Set an UPPER threshold for the building sensor (daytime)
-curl -s -X POST http://localhost/api/thresholds \
+# 6. Set an UPPER threshold for the building sensor (daytime)
+curl -s -X POST http://localhost/api/v1/thresholds \
   -H "$AUTH" -H "Content-Type: application/json" \
-  -d "{\"sensor_id\":\"$BSENSOR\",\"limit_value\":500,\"threshold_type\":\"UPPER\",\"tariff_zone\":\"DAY\"}"
+  -d "{\"sensor_id\":\"$BSENSOR\",\"limit_value\":500,\"threshold_type\":\"UPPER\",\"tariff_zone\":\"DAY\",\"organization_id\":$ORG}"
 ```
 
 ### 5.3 Send Telemetry
@@ -590,7 +770,7 @@ Then query:
 
 ```bash
 curl -H "$AUTH" \
-  "http://localhost/api/energy-balances?building_id=$BLD&date_from=2024-01-01T00:00:00&date_to=2024-01-02T00:00:00"
+  "http://localhost/api/v1/energy-balances?building_id=$BLD&date_from=2024-01-01T00:00:00&date_to=2024-01-02T00:00:00"
 ```
 
 ---
@@ -678,10 +858,11 @@ GreenOps/
     │   ├── main.py           # Entry point: build container, register scheduler, run uvicorn
     │   └── src/
     │       ├── domain/       # ABCs (repositories) + domain exceptions
-    │       │   └── users/    # User-specific entities, enums, and repository ABCs
+    │       │   ├── users/    # User-specific entities, enums, and repository ABCs
+    │       │   └── organization/ # Organization repository ABC + exceptions
     │       ├── application/  # Use cases and services (no infrastructure imports)
     │       │   ├── auth/     # JWT / bcrypt gateways ABCs + permission system
-    │       │   └── <domain>/ # BuildingService, SensorService, etc.
+    │       │   └── <domain>/ # BuildingService, OrganizationService, etc.
     │       └── infrastructure/
     │           ├── api/      # FastAPI routers, Pydantic schemas, DI dependencies
     │           ├── auth/     # Concrete JWT + bcrypt implementations
@@ -737,12 +918,13 @@ poetry run pytest src/tests/
 
 3. **Application layer** (`services/crud/src/application/<domain>/`)
    - Add `service.py` with `XyzService` (depends on the ABC via constructor injection)
+   - Inject `RoleGetter` for permission checks; use `_check(user, ...)` for global checks and `_check_org(user, organization_id, ...)` for org-scoped checks
 
 4. **Infrastructure layer**
    - `infrastructure/db/<domain>/repository.py` — concrete implementation using `crudx`
    - `infrastructure/db/<domain>/mappers.py` — `Adaptix` `ConversionRetort` mappings
    - `infrastructure/api/<domain>/schemas.py` — Pydantic request / response models
-   - `infrastructure/api/<domain>/router.py` — FastAPI router with permission checks
+   - `infrastructure/api/<domain>/router.py` — FastAPI router with permission checks via service
    - Register the router in `infrastructure/api/router.py`
    - Wire the repository in `infrastructure/providers/repositories.py`
    - Wire the service in `infrastructure/providers/services.py`
@@ -753,6 +935,7 @@ poetry run pytest src/tests/
 - `dataclass` for domain entities and DTOs; Pydantic `BaseModel` only at the HTTP boundary
 - No business logic in routers; no infrastructure imports in domain or application layers
 - `async def` for all I/O-bound operations
+- DB-layer mappers use `Adaptix`; API-layer mappers use manual field-by-field mapping
 
 ### 8.4 Adding a Kafka Consumer
 
@@ -773,12 +956,11 @@ poetry run pytest src/tests/
 ### Features
 
 - `UserActivationToken` and `TelegramToken` entities exist in the domain but no activation / Telegram-linking endpoints are implemented yet.
-- `UserOrganizationRolesRepository` ABC is defined but has no infrastructure implementation — multi-organization support is scaffolded but incomplete.
 - `PeakLoad` entity and table exist but there is no service or endpoint to query peak loads directly.
 - The `incidents.created` Kafka consumer (`on_incident_created`) only logs the event — no notifications are sent to users.
 - `UserNotificationSendToEnum` (EMAIL, TELEGRAM) is defined but notification dispatch is not implemented.
 - Redis is referenced in the README as "planned" but is not used anywhere in the current codebase.
-- The `WindowSize` enum (`HOUR`, `DAY`) exists in shared but is unused.
+- There are no endpoints for managing organization membership (assigning / removing `UserOrganizationRole`). Users must be granted org roles directly in the database.
 
 ### Operational
 
