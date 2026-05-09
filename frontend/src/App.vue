@@ -7,6 +7,7 @@
       <main class="flex-1 p-8 overflow-auto">
         <DashboardView     v-if="currentView === 'dashboard'" />
         <OrganizationsView v-else-if="currentView === 'organizations'" />
+        <UsersView         v-else-if="currentView === 'users'" />
         <BuildingsView     v-else-if="currentView === 'buildings'" />
         <UnitsView         v-else-if="currentView === 'units'" />
         <SensorsView       v-else-if="currentView === 'sensors'" />
@@ -24,6 +25,7 @@ import TheHeader         from './components/TheHeader.vue';
 import AppSidebar        from './components/AppSidebar.vue';
 import DashboardView     from './views/DashboardView.vue';
 import OrganizationsView from './views/OrganizationsView.vue';
+import UsersView         from './views/UsersView.vue';
 import BuildingsView     from './views/BuildingsView.vue';
 import UnitsView         from './views/UnitsView.vue';
 import SensorsView       from './views/SensorsView.vue';

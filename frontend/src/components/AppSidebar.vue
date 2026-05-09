@@ -18,7 +18,7 @@
 </template>
 
 <script setup>
-import { LayoutDashboard, Building2, Home, Cpu, Sliders, Briefcase } from 'lucide-vue-next';
+import { LayoutDashboard, Building2, Home, Cpu, Sliders, Briefcase, Users } from 'lucide-vue-next';
 
 defineProps(['modelValue']);
 defineEmits(['update:modelValue']);
@@ -26,6 +26,7 @@ defineEmits(['update:modelValue']);
 const navItems = [
   { view: 'dashboard',     label: 'Dashboard',     icon: LayoutDashboard },
   { view: 'organizations', label: 'Organizations',  icon: Briefcase },
+  { view: 'users',         label: 'Users',          icon: Users },
   { view: 'buildings',     label: 'Buildings',      icon: Building2 },
   { view: 'units',         label: 'Units',          icon: Home },
   { view: 'sensors',       label: 'Sensors',        icon: Cpu },
