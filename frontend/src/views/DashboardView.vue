@@ -21,14 +21,14 @@
       </span>
     </div>
 
-    <StatsCards :value="currentData?.value" :peak="peakValue" />
-    <UsageChart :history="historyData" />
+    <StatsCards :value="latestLoss" :peak="peakLoss" />
+    <UsageChart :history="chartHistory" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { analyticsApi } from '../api/index.js';
+import { ref, computed, watch, onMounted } from 'vue';
+import { energyBalancesApi } from '../api/index.js';
 import { useLocalStore } from '../composables/useLocalStore.js';
 import StatsCards from '../components/StatsCards.vue';
 import UsageChart from '../components/UsageChart.vue';
@@ -36,41 +36,37 @@ import UsageChart from '../components/UsageChart.vue';
 const { items: buildings } = useLocalStore('greenops_buildings', 'building_id');
 
 const selectedBuilding = ref(buildings.value[0]?.building_id ?? null);
-const currentData = ref(null);
-const historyData = ref([]);
-const peakValue = ref(0);
-let pollInterval = null;
+const balances = ref([]);
+
+const latestLoss = computed(() => balances.value[balances.value.length - 1]?.loss_kwh ?? 0);
+const peakLoss = computed(() => Math.max(0, ...balances.value.map(b => b.loss_kwh)));
+const chartHistory = computed(() =>
+  balances.value.map(b => ({ timestamp: b.period_start, value: b.loss_kwh }))
+);
 
 const selectBuilding = (id) => {
   selectedBuilding.value = id;
 };
 
-const updateData = async () => {
+const loadBalances = async () => {
   if (!selectedBuilding.value) return;
+  const dateTo = new Date().toISOString();
+  const dateFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   try {
-    const [curr, hist] = await Promise.all([
-      analyticsApi.current(selectedBuilding.value),
-      analyticsApi.history(selectedBuilding.value),
-    ]);
-    currentData.value = curr.data;
-    historyData.value = hist.data.reverse();
-    if (curr.data.value > peakValue.value) peakValue.value = curr.data.value;
+    const { data } = await energyBalancesApi.list({
+      building_id: selectedBuilding.value,
+      date_from: dateFrom,
+      date_to: dateTo,
+    });
+    balances.value = data;
   } catch {
-    // analytics service may not be running
+    balances.value = [];
   }
 };
 
-onMounted(() => {
-  updateData();
-  pollInterval = setInterval(updateData, 3000);
-});
-
-onUnmounted(() => clearInterval(pollInterval));
-
+onMounted(loadBalances);
 watch(selectedBuilding, () => {
-  peakValue.value = 0;
-  currentData.value = null;
-  historyData.value = [];
-  updateData();
+  balances.value = [];
+  loadBalances();
 });
 </script>

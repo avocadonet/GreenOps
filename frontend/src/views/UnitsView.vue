@@ -130,14 +130,21 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { Plus, Search, Pencil, Trash2 } from 'lucide-vue-next';
 import Modal from '../components/Modal.vue';
 import { unitsApi } from '../api/index.js';
 import { useLocalStore } from '../composables/useLocalStore.js';
 
-const { items, upsert, remove } = useLocalStore('greenops_units', 'unit_id');
+const { items, setAll, upsert, remove } = useLocalStore('greenops_units', 'unit_id');
 const { items: buildings } = useLocalStore('greenops_buildings', 'building_id');
+
+onMounted(async () => {
+  try {
+    const { data } = await unitsApi.list({ page_size: 100 });
+    setAll(data.items);
+  } catch {}
+});
 
 const lookupId = ref('');
 const error = ref('');

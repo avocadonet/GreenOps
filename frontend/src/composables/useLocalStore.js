@@ -6,6 +6,11 @@ export function useLocalStore(storageKey, idField) {
 
   const persist = () => localStorage.setItem(storageKey, JSON.stringify(items.value));
 
+  const setAll = (newItems) => {
+    items.value = newItems;
+    persist();
+  };
+
   const upsert = (item) => {
     const idx = items.value.findIndex(i => i[idField] === item[idField]);
     if (idx >= 0) items.value[idx] = item;
@@ -18,5 +23,5 @@ export function useLocalStore(storageKey, idField) {
     persist();
   };
 
-  return { items, upsert, remove };
+  return { items, setAll, upsert, remove };
 }

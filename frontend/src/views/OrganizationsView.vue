@@ -1,9 +1,9 @@
 <template>
   <div>
     <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold text-slate-800">Buildings</h2>
+      <h2 class="text-2xl font-bold text-slate-800">Organizations</h2>
       <button @click="openCreate" class="btn-primary flex items-center gap-2">
-        <Plus :size="16" /> New Building
+        <Plus :size="16" /> New Organization
       </button>
     </div>
 
@@ -11,7 +11,7 @@
       <Search :size="16" class="text-slate-400 shrink-0" />
       <input
         v-model="lookupId"
-        placeholder="Lookup building by UUID…"
+        placeholder="Lookup organization by ID…"
         class="flex-1 text-sm outline-none text-slate-700 placeholder-slate-400"
         @keydown.enter="lookup"
       />
@@ -24,73 +24,56 @@
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-slate-100 bg-slate-50">
-            <th class="text-left px-6 py-3 font-semibold text-slate-500">Address</th>
-            <th class="text-left px-6 py-3 font-semibold text-slate-500">Type</th>
-            <th class="text-left px-6 py-3 font-semibold text-slate-500">Area (m²)</th>
+            <th class="text-left px-6 py-3 font-semibold text-slate-500">Name</th>
+            <th class="text-left px-6 py-3 font-semibold text-slate-500">Contact Email</th>
+            <th class="text-left px-6 py-3 font-semibold text-slate-500">Created</th>
             <th class="text-left px-6 py-3 font-semibold text-slate-500">ID</th>
             <th class="px-6 py-3"></th>
           </tr>
         </thead>
         <tbody>
           <tr
-            v-for="b in items"
-            :key="b.building_id"
+            v-for="org in items"
+            :key="org.id"
             class="border-b border-slate-50 hover:bg-slate-50 transition-colors"
           >
-            <td class="px-6 py-4 font-medium text-slate-800">{{ b.address }}</td>
-            <td class="px-6 py-4">
-              <span :class="[
-                'px-2 py-0.5 rounded-full text-xs font-bold uppercase',
-                b.building_type === 'RESIDENTIAL' ? 'bg-sky-50 text-sky-700' : 'bg-amber-50 text-amber-700'
-              ]">{{ b.building_type }}</span>
+            <td class="px-6 py-4 font-medium text-slate-800">{{ org.name }}</td>
+            <td class="px-6 py-4 text-slate-500 text-xs">{{ org.contact_email || '—' }}</td>
+            <td class="px-6 py-4 text-slate-400 text-xs">
+              {{ org.created_at ? new Date(org.created_at).toLocaleDateString() : '—' }}
             </td>
-            <td class="px-6 py-4 text-slate-600">{{ b.total_area }}</td>
-            <td class="px-6 py-4 font-mono text-xs text-slate-400" :title="b.building_id">
-              {{ b.building_id.slice(0, 8) }}…
-            </td>
+            <td class="px-6 py-4 font-mono text-xs text-slate-400">{{ org.id }}</td>
             <td class="px-6 py-4">
               <div class="flex gap-1 justify-end">
-                <button @click="openEdit(b)" class="icon-btn text-slate-400 hover:text-emerald-600">
+                <button @click="openEdit(org)" class="icon-btn text-slate-400 hover:text-emerald-600">
                   <Pencil :size="15" />
                 </button>
-                <button @click="confirmDelete(b)" class="icon-btn text-slate-400 hover:text-red-500">
+                <button @click="confirmDelete(org)" class="icon-btn text-slate-400 hover:text-red-500">
                   <Trash2 :size="15" />
                 </button>
               </div>
             </td>
           </tr>
           <tr v-if="!items.length">
-            <td colspan="5" class="px-6 py-12 text-center text-slate-400">No buildings yet. Create one above.</td>
+            <td colspan="5" class="px-6 py-12 text-center text-slate-400">No organizations yet. Create one above.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <Modal v-model="showCreate" title="New Building">
+    <Modal v-model="showCreate" title="New Organization">
       <form @submit.prevent="submitCreate" class="space-y-4">
         <div>
-          <label class="form-label">Address</label>
-          <input v-model="form.address" required class="form-input" placeholder="123 Main St" />
+          <label class="form-label">Name</label>
+          <input v-model="form.name" required class="form-input" placeholder="Acme Corp" />
         </div>
         <div>
-          <label class="form-label">Building Type</label>
-          <select v-model="form.building_type" class="form-input">
-            <option value="RESIDENTIAL">Residential</option>
-            <option value="INDUSTRIAL">Industrial</option>
-          </select>
+          <label class="form-label">Description</label>
+          <input v-model="form.description" class="form-input" placeholder="Optional" />
         </div>
         <div>
-          <label class="form-label">Organization <span class="text-slate-400 font-normal">(optional)</span></label>
-          <select v-model="form.organization_id" class="form-input">
-            <option :value="null">— None —</option>
-            <option v-for="org in organizations" :key="org.id" :value="org.id">
-              {{ org.name }}
-            </option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label">Total Area (m²)</label>
-          <input v-model.number="form.total_area" type="number" step="0.01" min="0" required class="form-input" placeholder="1500.00" />
+          <label class="form-label">Contact Email</label>
+          <input v-model="form.contact_email" type="email" class="form-input" placeholder="ops@example.com" />
         </div>
         <div v-if="formError" class="text-sm text-red-600">{{ formError }}</div>
         <div class="flex gap-3 justify-end pt-2">
@@ -100,15 +83,19 @@
       </form>
     </Modal>
 
-    <Modal v-model="showEdit" title="Edit Building">
+    <Modal v-model="showEdit" title="Edit Organization">
       <form @submit.prevent="submitEdit" class="space-y-4">
         <div>
-          <label class="form-label">Address</label>
-          <input v-model="editForm.address" required class="form-input" />
+          <label class="form-label">Name</label>
+          <input v-model="editForm.name" required class="form-input" />
         </div>
         <div>
-          <label class="form-label">Total Area (m²)</label>
-          <input v-model.number="editForm.total_area" type="number" step="0.01" min="0" required class="form-input" />
+          <label class="form-label">Description</label>
+          <input v-model="editForm.description" class="form-input" />
+        </div>
+        <div>
+          <label class="form-label">Contact Email</label>
+          <input v-model="editForm.contact_email" type="email" class="form-input" />
         </div>
         <div v-if="formError" class="text-sm text-red-600">{{ formError }}</div>
         <div class="flex gap-3 justify-end pt-2">
@@ -118,9 +105,9 @@
       </form>
     </Modal>
 
-    <Modal v-model="showDelete" title="Delete Building">
+    <Modal v-model="showDelete" title="Delete Organization">
       <p class="text-sm text-slate-600 mb-6">
-        Delete <strong>{{ deleteTarget?.address }}</strong>? This cannot be undone.
+        Delete <strong>{{ deleteTarget?.name }}</strong>? This cannot be undone.
       </p>
       <div class="flex gap-3 justify-end">
         <button @click="showDelete = false" class="btn-secondary">Cancel</button>
@@ -134,15 +121,14 @@
 import { ref, onMounted } from 'vue';
 import { Plus, Search, Pencil, Trash2 } from 'lucide-vue-next';
 import Modal from '../components/Modal.vue';
-import { buildingsApi } from '../api/index.js';
+import { organizationsApi } from '../api/index.js';
 import { useLocalStore } from '../composables/useLocalStore.js';
 
-const { items, setAll, upsert, remove } = useLocalStore('greenops_buildings', 'building_id');
-const { items: organizations } = useLocalStore('greenops_organizations', 'id');
+const { items, setAll, upsert, remove } = useLocalStore('greenops_organizations', 'id');
 
 onMounted(async () => {
   try {
-    const { data } = await buildingsApi.list({ page_size: 100 });
+    const { data } = await organizationsApi.list({ page_size: 100 });
     setAll(data.items);
   } catch {}
 });
@@ -157,23 +143,23 @@ const showDelete = ref(false);
 const deleteTarget = ref(null);
 const editTarget = ref(null);
 
-const form = ref({ address: '', building_type: 'RESIDENTIAL', total_area: '', organization_id: null });
-const editForm = ref({ address: '', total_area: '' });
+const form = ref({ name: '', description: '', contact_email: '' });
+const editForm = ref({ name: '', description: '', contact_email: '' });
 
 const lookup = async () => {
   if (!lookupId.value.trim()) return;
   error.value = '';
   try {
-    const { data } = await buildingsApi.get(lookupId.value.trim());
+    const { data } = await organizationsApi.get(lookupId.value.trim());
     upsert(data);
     lookupId.value = '';
   } catch (e) {
-    error.value = e.response?.data?.detail || 'Building not found.';
+    error.value = e.response?.data?.detail || 'Organization not found.';
   }
 };
 
 const openCreate = () => {
-  form.value = { address: '', building_type: 'RESIDENTIAL', total_area: '', organization_id: null };
+  form.value = { name: '', description: '', contact_email: '' };
   formError.value = '';
   showCreate.value = true;
 };
@@ -182,19 +168,24 @@ const submitCreate = async () => {
   loading.value = true;
   formError.value = '';
   try {
-    const { data } = await buildingsApi.create(form.value);
+    const payload = {
+      name: form.value.name,
+      description: form.value.description || null,
+      contact_email: form.value.contact_email || null,
+    };
+    const { data } = await organizationsApi.create(payload);
     upsert(data);
     showCreate.value = false;
   } catch (e) {
-    formError.value = e.response?.data?.detail || 'Failed to create building.';
+    formError.value = e.response?.data?.detail || 'Failed to create organization.';
   } finally {
     loading.value = false;
   }
 };
 
-const openEdit = (b) => {
-  editTarget.value = b;
-  editForm.value = { address: b.address, total_area: b.total_area };
+const openEdit = (org) => {
+  editTarget.value = org;
+  editForm.value = { name: org.name, description: org.description || '', contact_email: org.contact_email || '' };
   formError.value = '';
   showEdit.value = true;
 };
@@ -203,29 +194,34 @@ const submitEdit = async () => {
   loading.value = true;
   formError.value = '';
   try {
-    const { data } = await buildingsApi.update(editTarget.value.building_id, editForm.value);
+    const payload = {
+      name: editForm.value.name,
+      description: editForm.value.description || null,
+      contact_email: editForm.value.contact_email || null,
+    };
+    const { data } = await organizationsApi.update(editTarget.value.id, payload);
     upsert(data);
     showEdit.value = false;
   } catch (e) {
-    formError.value = e.response?.data?.detail || 'Failed to update building.';
+    formError.value = e.response?.data?.detail || 'Failed to update organization.';
   } finally {
     loading.value = false;
   }
 };
 
-const confirmDelete = (b) => {
-  deleteTarget.value = b;
+const confirmDelete = (org) => {
+  deleteTarget.value = org;
   showDelete.value = true;
 };
 
 const submitDelete = async () => {
   loading.value = true;
   try {
-    await buildingsApi.remove(deleteTarget.value.building_id);
-    remove(deleteTarget.value.building_id);
+    await organizationsApi.remove(deleteTarget.value.id);
+    remove(deleteTarget.value.id);
     showDelete.value = false;
   } catch (e) {
-    error.value = e.response?.data?.detail || 'Failed to delete building.';
+    error.value = e.response?.data?.detail || 'Failed to delete organization.';
     showDelete.value = false;
   } finally {
     loading.value = false;

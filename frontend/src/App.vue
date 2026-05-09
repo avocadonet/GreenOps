@@ -1,14 +1,16 @@
 <template>
-  <div class="min-h-screen bg-slate-50 flex flex-col">
+  <LoginView v-if="!isAuthenticated" />
+  <div v-else class="min-h-screen bg-slate-50 flex flex-col">
     <TheHeader />
     <div class="flex flex-1 overflow-hidden" style="height: calc(100vh - 57px)">
       <AppSidebar v-model="currentView" />
       <main class="flex-1 p-8 overflow-auto">
-        <DashboardView  v-if="currentView === 'dashboard'" />
-        <BuildingsView  v-else-if="currentView === 'buildings'" />
-        <UnitsView      v-else-if="currentView === 'units'" />
-        <SensorsView    v-else-if="currentView === 'sensors'" />
-        <ThresholdsView v-else-if="currentView === 'thresholds'" />
+        <DashboardView     v-if="currentView === 'dashboard'" />
+        <OrganizationsView v-else-if="currentView === 'organizations'" />
+        <BuildingsView     v-else-if="currentView === 'buildings'" />
+        <UnitsView         v-else-if="currentView === 'units'" />
+        <SensorsView       v-else-if="currentView === 'sensors'" />
+        <ThresholdsView    v-else-if="currentView === 'thresholds'" />
       </main>
     </div>
   </div>
@@ -16,14 +18,18 @@
 
 <script setup>
 import { ref } from 'vue';
-import TheHeader     from './components/TheHeader.vue';
-import AppSidebar    from './components/AppSidebar.vue';
-import DashboardView  from './views/DashboardView.vue';
-import BuildingsView  from './views/BuildingsView.vue';
-import UnitsView      from './views/UnitsView.vue';
-import SensorsView    from './views/SensorsView.vue';
-import ThresholdsView from './views/ThresholdsView.vue';
+import { useAuth } from './composables/useAuth.js';
+import LoginView         from './views/LoginView.vue';
+import TheHeader         from './components/TheHeader.vue';
+import AppSidebar        from './components/AppSidebar.vue';
+import DashboardView     from './views/DashboardView.vue';
+import OrganizationsView from './views/OrganizationsView.vue';
+import BuildingsView     from './views/BuildingsView.vue';
+import UnitsView         from './views/UnitsView.vue';
+import SensorsView       from './views/SensorsView.vue';
+import ThresholdsView    from './views/ThresholdsView.vue';
 
+const { isAuthenticated } = useAuth();
 const currentView = ref('dashboard');
 </script>
 
