@@ -9,6 +9,7 @@ class CreateBuildingRequest(BaseModel):
     address: str
     building_type: BuildingType
     total_area: float
+    organization_id: int | None = None
 
 
 class UpdateBuildingRequest(BaseModel):
@@ -21,3 +22,4 @@ class BuildingResponse(BaseModel):
     address: str
     building_type: BuildingType
     total_area: float
+    organization_id: int | None = None

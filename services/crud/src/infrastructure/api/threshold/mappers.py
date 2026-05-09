@@ -10,6 +10,7 @@ def create_request_to_dto(request: CreateThresholdRequest) -> CreateThresholdDTO
         limit_value=request.limit_value,
         threshold_type=request.threshold_type,
         tariff_zone=request.tariff_zone,
+        organization_id=request.organization_id,
     )
 
 
@@ -20,4 +21,5 @@ def entity_to_response(entity: Threshold) -> ThresholdResponse:
         limit_value=entity.limit_value,
         threshold_type=entity.threshold_type,
         tariff_zone=entity.tariff_zone,
+        organization_id=entity.organization_id,
     )

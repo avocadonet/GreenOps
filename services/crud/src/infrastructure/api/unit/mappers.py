@@ -12,6 +12,7 @@ def create_request_to_dto(request: CreateUnitRequest) -> CreateUnitDTO:
         unit_number=request.unit_number,
         floor=request.floor,
         owner_name=request.owner_name,
+        organization_id=request.organization_id,
     )
 
 
@@ -31,4 +32,5 @@ def entity_to_response(entity: Unit) -> UnitResponse:
         unit_number=entity.unit_number,
         floor=entity.floor,
         owner_name=entity.owner_name,
+        organization_id=entity.organization_id,
     )

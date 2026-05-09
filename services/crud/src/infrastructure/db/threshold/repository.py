@@ -7,6 +7,7 @@ from crudx.sa.gateway import (
     ErrorHandlingSqlAlchemyRepository,
     provide,
 )
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.threshold.exceptions import (
@@ -39,6 +40,15 @@ class ThresholdDatabaseRepository(
         self.gateway = AsyncSqlAlchemyGateway(
             session, sa_model=ThresholdModel, id_attr="threshold_id"
         )
+
+    @decorators.read_all
+    async def list_all(self, sensor_id: UUID | None, organization_id: int | None, page: int, page_size: int) -> list[Threshold]:
+        stmt = select(ThresholdModel)
+        if sensor_id is not None:
+            stmt = stmt.where(ThresholdModel.sensor_id == sensor_id)
+        if organization_id is not None:
+            stmt = stmt.where(ThresholdModel.organization_id == organization_id)
+        return stmt
 
     @decorators.read
     async def read(self, threshold_id: UUID) -> Threshold: ...

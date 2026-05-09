@@ -1,8 +1,5 @@
 from application.auth.dtos import AuthenticateUserDto, RegisterUserDto
-from application.auth.usecases.create_user_with_password import (
-    CreateUserWithPasswordUseCase,
-)
-from application.auth.usecases.login import LoginUseCase
+from application.auth.services import AuthService
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter
 
@@ -20,9 +17,9 @@ router = APIRouter(prefix="/auth", route_class=DishkaRoute, tags=["auth"])
 )
 async def login(
     body: LoginRequest,
-    login_use_case: FromDishka[LoginUseCase],
+    auth: FromDishka[AuthService],
 ):
-    user, tokens = await login_use_case(
+    user, tokens = await auth.login(
         AuthenticateUserDto(email=body.email, password=body.password)
     )
     return TokenResponse(
@@ -41,9 +38,9 @@ async def login(
 )
 async def register(
     body: RegisterRequest,
-    create_user: FromDishka[CreateUserWithPasswordUseCase],
+    auth: FromDishka[AuthService],
 ):
-    user = await create_user(
+    user = await auth.register(
         RegisterUserDto(email=body.email, password=body.password, fullname=body.fullname)
     )
     return RegisterResponse(

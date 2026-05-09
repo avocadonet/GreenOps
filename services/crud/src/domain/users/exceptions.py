@@ -1,57 +1,57 @@
-from domain.exceptions import (
-    EntityAccessDenied,
-    EntityAlreadyExistsError,
-    EntityException,
-    EntityNotFoundError,
+from shared.exceptions import (
+    GreenOpsException,
+    EntityAccessDeniedException,
+    EntityAlreadyExistsException,
+    EntityNotFoundException,
 )
 from domain.users.entities import TelegramToken, User, UserOrganizationRole
 
 
-class UserNotFoundError(EntityNotFoundError):
+class UserNotFoundError(EntityNotFoundException):
     def __init__(self):
         super().__init__(User)
 
 
-class UserAlreadyExistsError(EntityAlreadyExistsError):
+class UserAlreadyExistsError(EntityAlreadyExistsException):
     def __init__(self):
         super().__init__(User)
 
 
-class UserAccessDenied(EntityAccessDenied):
+class UserAccessDenied(EntityAccessDeniedException):
     def __init__(self):
         super().__init__()
 
 
-class UserNotValidated(EntityException):
+class UserNotValidated(GreenOpsException):
     def __init__(self):
         super().__init__(f"Пользователь не активирован!")
 
 
-class TelegramTokenNotFoundError(EntityNotFoundError):
+class TelegramTokenNotFoundError(EntityNotFoundException):
     def __init__(self):
         super().__init__(TelegramToken)
 
 
-class TelegramTokenAlreadyExistsError(EntityAlreadyExistsError):
+class TelegramTokenAlreadyExistsError(EntityAlreadyExistsException):
     def __init__(self):
         super().__init__(TelegramToken)
 
 
-class UserRoleAlreadyExistsError(EntityAlreadyExistsError):
+class UserRoleAlreadyExistsError(EntityAlreadyExistsException):
     def __init__(self):
         super().__init__(UserOrganizationRole)
 
 
-class UserRoleNotFoundError(EntityNotFoundError):
+class UserRoleNotFoundError(EntityNotFoundException):
     def __init__(self):
         super().__init__(UserOrganizationRole)
 
 
-class CalendarUUIDNotFoundError(EntityNotFoundError):
+class CalendarUUIDNotFoundError(EntityNotFoundException):
     def __init__(self):
         super().__init__(User)
 
 
-class TelegramNotConnectedError(EntityException):
+class TelegramNotConnectedError(GreenOpsException):
     def __init__(self):
         super().__init__("Telegram not connected")

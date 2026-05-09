@@ -11,6 +11,7 @@ def create_request_to_dto(request: CreateBuildingRequest) -> CreateBuildingDTO:
         address=request.address,
         building_type=request.building_type,
         total_area=request.total_area,
+        organization_id=request.organization_id,
     )
 
 
@@ -30,4 +31,5 @@ def entity_to_response(entity: Building) -> BuildingResponse:
         address=entity.address,
         building_type=entity.building_type,
         total_area=entity.total_area,
+        organization_id=entity.organization_id,
     )

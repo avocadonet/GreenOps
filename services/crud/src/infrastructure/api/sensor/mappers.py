@@ -12,6 +12,7 @@ def create_request_to_dto(request: CreateSensorRequest) -> CreateSensorDTO:
         sensor_type=request.sensor_type,
         building_id=request.building_id,
         unit_id=request.unit_id,
+        organization_id=request.organization_id,
     )
 
 
@@ -24,4 +25,5 @@ def entity_to_response(entity: Sensor) -> SensorResponse:
         sensor_type=entity.sensor_type,
         building_id=entity.building_id,
         unit_id=entity.unit_id,
+        organization_id=entity.organization_id,
     )

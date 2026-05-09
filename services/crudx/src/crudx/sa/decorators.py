@@ -102,15 +102,28 @@ def delete[Entity](func: Optional[Callable] = None, *, raise_if_missing: bool = 
 
 
 def read_all[Entity](func: Optional[Callable] = None):
-    def decorator(_: Callable[..., Awaitable[Page[Entity]]]):
-        async def wrapper(self: SqlAlchemyRepository, dto: Any) -> list[Entity]:
-            page = getattr(dto, "page", 1)
-            page_size = getattr(dto, "page_size", 50)
+    def decorator(method: Callable[..., Awaitable[Page[Entity]]]):
+        async def wrapper(self: SqlAlchemyRepository, *args, **kwargs) -> list[Entity]:
+            params = getcallargs(method, self, *args, **kwargs)
+            params.pop("self")
 
-            items = await self.gateway.select_all(
-                PageSpec(page=page, page_size=page_size)
-            )
-            return list(self.config.model_mapper(m) for m in items)
+            params["page"] =  params.pop("page", 10)
+            params["page_size"] =  params.pop("page_size", 10)
+
+            models = []
+            result = await method(self, **params)
+            with _extinguish_exceptions(False):
+                if result is None:
+                    models = await self.gateway.select_all(**params)
+                if is_dataclass(result):
+                    dto_as_dict = asdict(result)
+                    models = await self.gateway.select_by_fields_all(**dto_as_dict)
+                if isinstance(result, Select):
+                    models = await self.gateway.select_by_query_all(
+                        self.gateway.with_pagination(result, PageSpec(page=params["page"], page_size=params["page_size"]))
+                    )
+
+            return list(self.config.model_mapper(m) for m in models)
 
         return wrapper
 

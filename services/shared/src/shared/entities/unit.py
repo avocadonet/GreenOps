@@ -9,3 +9,4 @@ class Unit:
     unit_number: str
     floor: int
     owner_name: str
+    organization_id: int | None = None

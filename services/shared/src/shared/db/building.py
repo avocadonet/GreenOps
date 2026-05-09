@@ -1,6 +1,6 @@
 from uuid import UUID, uuid4
 
-from sqlalchemy import Enum as SAEnum, String
+from sqlalchemy import Enum as SAEnum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from shared.db.base import Base
@@ -16,3 +16,6 @@ class BuildingModel(Base):
         SAEnum(BuildingType, name="building_type_enum")
     )
     total_area: Mapped[float]
+    organization_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True
+    )

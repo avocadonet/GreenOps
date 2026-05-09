@@ -1,5 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
+from domain.users.entities import User
+
 from .dtos import PasswordDto, TokenInfoDto, TokenPairDto
 
 
@@ -10,7 +12,7 @@ class TokensGateway(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    async def create_token_pair(self, subject: str) -> TokenPairDto: ...
+    async def create_token_pair(self, user: User) -> TokenPairDto: ...
 
     @abstractmethod
     async def extract_token_info(

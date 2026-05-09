@@ -6,7 +6,6 @@ from .login import LoginUseCase
 from .register import RegisterUseCase
 
 __all__ = [
-    "CreateTokenPairUseCase",
     "CreateUserWithPasswordUseCase",
     "AuthenticateUseCase",
     "AuthorizeUseCase",

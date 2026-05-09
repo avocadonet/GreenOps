@@ -7,6 +7,7 @@ from crudx.sa.gateway import (
     ErrorHandlingSqlAlchemyRepository,
     provide,
 )
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.unit.exceptions import UnitAlreadyExistsException, UnitNotFoundException
@@ -36,6 +37,15 @@ class UnitDatabaseRepository(
         self.gateway = AsyncSqlAlchemyGateway(
             session, sa_model=UnitModel, id_attr="unit_id"
         )
+
+    @decorators.read_all
+    async def list_all(self, building_id: UUID | None, organization_id: int | None, page: int, page_size: int) -> list[Unit]:
+        stmt = select(UnitModel)
+        if building_id is not None:
+            stmt = stmt.where(UnitModel.building_id == building_id)
+        if organization_id is not None:
+            stmt = stmt.where(UnitModel.organization_id == organization_id)
+        return stmt
 
     @decorators.read
     async def read(self, unit_id: UUID) -> Unit: ...

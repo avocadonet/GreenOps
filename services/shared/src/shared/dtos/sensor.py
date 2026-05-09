@@ -13,3 +13,4 @@ class CreateSensorDTO:
     sensor_type: SensorType
     building_id: UUID | None
     unit_id: UUID | None
+    organization_id: int | None = None

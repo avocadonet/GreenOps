@@ -8,6 +8,7 @@ class CreateUnitRequest(BaseModel):
     unit_number: str
     floor: int
     owner_name: str
+    organization_id: int | None = None
 
 
 class UpdateUnitRequest(BaseModel):
@@ -22,3 +23,4 @@ class UnitResponse(BaseModel):
     unit_number: str
     floor: int
     owner_name: str
+    organization_id: int | None = None

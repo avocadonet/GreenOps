@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from shared.db.base import Base
@@ -11,9 +11,11 @@ class MetricModel(Base):
     __tablename__ = "metrics"
 
     metric_id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    sensor_id: Mapped[UUID] = mapped_column(ForeignKey("sensors.sensor_id", ondelete="CASCADE"))
+    sensor_id: Mapped[UUID] = mapped_column(
+        ForeignKey("sensors.sensor_id", ondelete="CASCADE")
+    )
     value: Mapped[float]
     measurement_unit: Mapped[str] = mapped_column(String(10), default="kWh")
     voltage: Mapped[float]
     current: Mapped[float]
-    recorded_at: Mapped[datetime]
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

@@ -1,12 +1,12 @@
 from uuid import UUID
 
-from application.auth.enums import PermissionsEnum
 from application.unit.service import UnitService
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
-from fastapi import APIRouter, Depends
+from domain.users.entities import User
+from fastapi import APIRouter, Depends, Query
 
-from infrastructure.api.dependencies import require_permission
-from infrastructure.api.schemas import ErrorModel
+from infrastructure.api.dependencies import get_current_user
+from infrastructure.api.schemas import ErrorModel, PaginatedResponse
 
 from . import mappers
 from .schemas import CreateUnitRequest, UnitResponse, UpdateUnitRequest
@@ -18,18 +18,38 @@ router = APIRouter(
 )
 
 
+@router.get(
+    "",
+    response_model=PaginatedResponse[UnitResponse],
+)
+async def list_units(
+    service: FromDishka[UnitService],
+    user: User = Depends(get_current_user),
+    building_id: UUID | None = Query(None),
+    organization_id: int | None = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+):
+    items = await service.list_all(user, building_id, organization_id, page, page_size)
+    return PaginatedResponse(
+        items=[mappers.entity_to_response(i) for i in items],
+        page=page,
+        page_size=page_size,
+    )
+
+
 @router.post(
     "",
     response_model=UnitResponse,
     status_code=201,
-    dependencies=[Depends(require_permission(PermissionsEnum.CAN_CREATE_UNIT))],
 )
 async def create_unit(
     body: CreateUnitRequest,
     service: FromDishka[UnitService],
+    user: User = Depends(get_current_user),
 ):
     return mappers.entity_to_response(
-        await service.create(mappers.create_request_to_dto(body))
+        await service.create(user, mappers.create_request_to_dto(body))
     )
 
 
@@ -37,28 +57,28 @@ async def create_unit(
     "/{unit_id}",
     response_model=UnitResponse,
     responses={404: {"model": ErrorModel}},
-    dependencies=[Depends(require_permission(PermissionsEnum.CAN_READ_UNIT))],
 )
 async def read_unit(
     unit_id: UUID,
     service: FromDishka[UnitService],
+    user: User = Depends(get_current_user),
 ):
-    return mappers.entity_to_response(await service.read(unit_id))
+    return mappers.entity_to_response(await service.read(user, unit_id))
 
 
 @router.put(
     "/{unit_id}",
     response_model=UnitResponse,
     responses={404: {"model": ErrorModel}},
-    dependencies=[Depends(require_permission(PermissionsEnum.CAN_UPDATE_UNIT))],
 )
 async def update_unit(
     unit_id: UUID,
     body: UpdateUnitRequest,
     service: FromDishka[UnitService],
+    user: User = Depends(get_current_user),
 ):
     return mappers.entity_to_response(
-        await service.update(mappers.update_request_to_dto(body, unit_id))
+        await service.update(user, mappers.update_request_to_dto(body, unit_id))
     )
 
 
@@ -66,10 +86,10 @@ async def update_unit(
     "/{unit_id}",
     response_model=UnitResponse,
     responses={404: {"model": ErrorModel}},
-    dependencies=[Depends(require_permission(PermissionsEnum.CAN_DELETE_UNIT))],
 )
 async def delete_unit(
     unit_id: UUID,
     service: FromDishka[UnitService],
+    user: User = Depends(get_current_user),
 ):
-    return mappers.entity_to_response(await service.delete(unit_id))
+    return mappers.entity_to_response(await service.delete(user, unit_id))

@@ -26,3 +26,6 @@ class SensorModel(Base):
     unit_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("units.unit_id", ondelete="CASCADE"), nullable=True
     )
+    organization_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True
+    )

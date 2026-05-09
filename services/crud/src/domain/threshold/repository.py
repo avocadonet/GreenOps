@@ -7,6 +7,9 @@ from shared.entities.threshold import Threshold
 
 class ThresholdRepository(ABC):
     @abstractmethod
+    async def list_all(self, sensor_id: UUID | None, organization_id: int | None, page: int, page_size: int) -> list[Threshold]: ...
+
+    @abstractmethod
     async def create(self, dto: CreateThresholdDTO) -> Threshold: ...
 
     @abstractmethod

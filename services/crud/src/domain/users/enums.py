@@ -11,6 +11,7 @@ class RoleEnum(Enum):
     SUPER_OWNER = "SUPER_OWNER"
     SUPER_ADMIN = "SUPER_ADMIN"
     SUPER_REDACTOR = "SUPER_REDACTOR"
+    ORGANIZATION_OWNER = "ORGANIZATION_OWNER"
     OWNER = "OWNER"
     ADMIN = "ADMIN"
     REDACTOR = "REDACTOR"
@@ -22,6 +23,7 @@ roles_priorities = [
     RoleEnum.SUPER_OWNER,
     RoleEnum.SUPER_ADMIN,
     RoleEnum.SUPER_REDACTOR,
+    RoleEnum.ORGANIZATION_OWNER,
     RoleEnum.OWNER,
     RoleEnum.ADMIN,
     RoleEnum.REDACTOR,
@@ -31,6 +33,7 @@ roles_priorities = [
 roles_delete_priorities = [
     RoleEnum.SUPER_USER,
     RoleEnum.SUPER_OWNER,
+    RoleEnum.ORGANIZATION_OWNER,
     RoleEnum.OWNER,
     RoleEnum.SUPER_ADMIN,
     RoleEnum.ADMIN,

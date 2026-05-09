@@ -2,12 +2,17 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from application.auth.exceptions import InvalidCredentialsError
+from domain.exceptions import EntityAccessDenied
 from domain.sensor.exceptions import SensorAttachmentException
 from domain.users.exceptions import UserAlreadyExistsError, UserNotValidated
 from shared.exceptions import EntityNotFoundException
 
 
 def register_handlers(app: FastAPI) -> None:
+    @app.exception_handler(EntityAccessDenied)
+    async def access_denied_handler(request: Request, exc: EntityAccessDenied):
+        return JSONResponse(status_code=403, content={"detail": "Forbidden"})
+
     @app.exception_handler(EntityNotFoundException)
     async def not_found_handler(request: Request, exc: EntityNotFoundException):
         return JSONResponse(status_code=404, content={"detail": str(exc)})

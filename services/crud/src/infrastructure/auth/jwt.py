@@ -5,6 +5,7 @@ from application.auth.exceptions import InvalidCredentialsError
 from application.auth.tokens.config import TokenConfig
 from application.auth.tokens.dtos import TokenInfoDto, TokenPairDto
 from application.auth.tokens.gateways import TokensGateway
+from domain.users.entities import User
 
 
 class JwtTokensGateway(TokensGateway):
@@ -32,11 +33,11 @@ class JwtTokensGateway(TokensGateway):
             algorithm=self.__config.algorithm,
         )
 
-    async def create_token_pair(self, subject: str) -> TokenPairDto:
-        """Генерирует пару access и refresh токенов для указанного субъекта."""
+    async def create_token_pair(self, user: User) -> TokenPairDto:
+        """Генерирует пару access и refresh токенов для указанного пользователя."""
 
-        access_token = self.__encode(subject, self.__config.access_token_expires_time)
-        refresh_token = self.__encode(subject, self.__config.refresh_token_expires_time)
+        access_token = self.__encode(user.email, self.__config.access_token_expires_time)
+        refresh_token = self.__encode(user.email, self.__config.refresh_token_expires_time)
         return TokenPairDto(
             access_token=access_token,
             refresh_token=refresh_token,

@@ -1,12 +1,10 @@
 import asyncio
 
-from infrastructure.kafka.app import create_app
-from infrastructure.configs.config import get_config
+from kafka_app import create_app
 
 
 async def main():
-    config = get_config()
-    app = create_app(config.kafka_bootstrap_servers)
+    app = create_app()
     await app.run()
 
 

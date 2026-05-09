@@ -7,7 +7,7 @@ from domain.users.repositories import (
 )
 
 from application.auth.tokens.dtos import TokenPairDto
-from application.auth.usecases import CreateTokenPairUseCase
+from application.auth.tokens.gateways import TokensGateway
 from application.transactions import TransactionsGateway
 from application.users.usecases.read import ReadUserUseCase
 from application.users.usecases.update import UpdateUserUseCase
@@ -27,7 +27,7 @@ class ValidateActivationTokenUseCase:
         token_repository: UserActivationTokenRepository,
         read_user_use_case: ReadUserUseCase,
         tx: TransactionsGateway,
-        create_token_pair_use_case: CreateTokenPairUseCase,
+        tokens_gateway: TokensGateway,
         update_user_use_case: UpdateUserUseCase,
     ):
         """Инициализирует зависимости для работы с пользователями,
@@ -38,7 +38,7 @@ class ValidateActivationTokenUseCase:
         self.__token_repository = token_repository
         self.__read_user_use_case = read_user_use_case
         self.__transaction = tx
-        self.__create_token_pair_use_case = create_token_pair_use_case
+        self.__tokens_gateway = tokens_gateway
         self.update_user_use_case = update_user_use_case
 
     async def __call__(self, token_uuid: UUID) -> tuple[User, TokenPairDto]:
@@ -53,4 +53,4 @@ class ValidateActivationTokenUseCase:
             token = await self.__token_repository.read(token_uuid)
             await self.__token_repository.change_token_used_statement(token.id)
             await self.__users_repository.change_user_active_status(token.user.id, True)
-            return token.user, await self.__create_token_pair_use_case(token.user)
+            return token.user, await self.__tokens_gateway.create_token_pair(token.user)

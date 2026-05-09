@@ -5,15 +5,19 @@ from shared.db.building import BuildingModel
 from shared.db.energy_balance import EnergyBalanceModel
 from shared.db.incident import IncidentModel
 from shared.db.metric import MetricModel
+from shared.db.organization import OrganizationModel
 from shared.db.peak_load import PeakLoadModel
 from shared.db.sensor import SensorModel
 from shared.db.threshold import ThresholdModel
 from shared.db.unit import UnitModel
+from shared.db.user import UserModel
+from shared.db.user_organization_role import UserOrganizationRoleModel
 
 __all__ = [
     "Base",
     "BuildingModel",
     "UnitModel",
+    "UserModel",
     "SensorModel",
     "MetricModel",
     "ThresholdModel",
@@ -21,4 +25,6 @@ __all__ = [
     "AverageLoadModel",
     "PeakLoadModel",
     "IncidentModel",
+    "OrganizationModel",
+    "UserOrganizationRoleModel",
 ]

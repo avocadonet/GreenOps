@@ -7,6 +7,7 @@ from crudx.sa.gateway import (
     ErrorHandlingSqlAlchemyRepository,
     provide,
 )
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.sensor.exceptions import (
@@ -40,13 +41,16 @@ class SensorDatabaseRepository(
             session, sa_model=SensorModel, id_attr="sensor_id"
         )
 
-    async def list_all(self) -> list[Sensor]:
-        models = await self.gateway.select_by_fields_all()
-        return [self.config.model_mapper(m) for m in models]
+    @decorators.read_all
+    async def list_all(self, organization_id: int | None, page: int, page_size: int) -> list[Sensor]:
+        stmt = select(SensorModel)
+        if organization_id is not None:
+            stmt = stmt.where(SensorModel.organization_id == organization_id)
+        return stmt
 
-    async def list_by_building(self, building_id: UUID) -> list[Sensor]:
-        models = await self.gateway.select_by_fields_all(building_id=building_id)
-        return [self.config.model_mapper(m) for m in models]
+    @decorators.read_all
+    async def list_by_building(self, building_id: UUID, page: int, page_size: int) -> list[Sensor]:
+        return select(SensorModel).where(SensorModel.building_id == building_id)
 
     @decorators.read
     async def read(self, sensor_id: UUID) -> Sensor: ...

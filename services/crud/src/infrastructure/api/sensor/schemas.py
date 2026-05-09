@@ -13,6 +13,7 @@ class CreateSensorRequest(BaseModel):
     sensor_type: SensorType
     building_id: UUID | None = None
     unit_id: UUID | None = None
+    organization_id: int | None = None
 
 
 class UpdateSensorRequest(BaseModel):
@@ -29,3 +30,4 @@ class SensorResponse(BaseModel):
     sensor_type: SensorType
     building_id: UUID | None
     unit_id: UUID | None
+    organization_id: int | None = None

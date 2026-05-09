@@ -7,6 +7,7 @@ from crudx.sa.gateway import (
     ErrorHandlingSqlAlchemyRepository,
     provide,
 )
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.building.exceptions import (
@@ -40,9 +41,12 @@ class BuildingDatabaseRepository(
             session, sa_model=BuildingModel, id_attr="building_id"
         )
 
-    async def list_all(self) -> list[Building]:
-        models = await self.gateway.select_by_fields_all()
-        return [self.config.model_mapper(m) for m in models]
+    @decorators.read_all
+    async def list_all(self, organization_id: int | None, page: int, page_size: int) -> list[Building]:
+        stmt = select(BuildingModel)
+        if organization_id is not None:
+            stmt = stmt.where(BuildingModel.organization_id == organization_id)
+        return stmt
 
     @decorators.read
     async def read(self, building_id: UUID) -> Building: ...

@@ -10,3 +10,4 @@ class Building:
     address: str
     building_type: BuildingType
     total_area: float
+    organization_id: int | None = None

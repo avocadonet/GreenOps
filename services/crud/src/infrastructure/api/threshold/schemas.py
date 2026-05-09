@@ -10,6 +10,7 @@ class CreateThresholdRequest(BaseModel):
     limit_value: float
     threshold_type: ThresholdType
     tariff_zone: TariffZone
+    organization_id: int | None = None
 
 
 class UpdateThresholdRequest(BaseModel):
@@ -22,3 +23,4 @@ class ThresholdResponse(BaseModel):
     limit_value: float
     threshold_type: ThresholdType
     tariff_zone: TariffZone
+    organization_id: int | None = None
