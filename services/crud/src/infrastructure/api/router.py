@@ -7,10 +7,10 @@ from infrastructure.api.organization.router import router as organizations_route
 from infrastructure.api.sensor.router import router as sensors_router
 from infrastructure.api.threshold.router import router as thresholds_router
 from infrastructure.api.unit.router import router as units_router
+from infrastructure.api.users.router import router as users_router
 
 from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter
-
 
 
 def include_routers(app: FastAPI) -> None:
@@ -20,6 +20,7 @@ def include_routers(app: FastAPI) -> None:
 
     v1_router.include_router(auth_router)
     v1_router.include_router(organizations_router)
+    v1_router.include_router(users_router)
     v1_router.include_router(buildings_router)
     v1_router.include_router(units_router)
     v1_router.include_router(sensors_router)

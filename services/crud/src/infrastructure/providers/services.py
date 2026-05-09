@@ -5,6 +5,7 @@ from application.organization.service import OrganizationService
 from application.sensor.service import SensorService
 from application.threshold.service import ThresholdService
 from application.unit.service import UnitService
+from application.users.services import UserRoleService, UserService
 from dishka import Provider, Scope, provide
 
 from domain.average_load.repository import AverageLoadRepository
@@ -27,6 +28,8 @@ class ServiceProvider(Provider):
     sensors = provide(SensorService)
     thresholds = provide(ThresholdService)
     organizations = provide(OrganizationService)
+    users = provide(UserService)
+    user_roles = provide(UserRoleService)
 
     avg_load_calculator = provide(AverageLoadCalculator, scope=Scope.APP)
     energy_balance_calculator = provide(EnergyBalanceCalculator, scope=Scope.APP)
