@@ -13,6 +13,11 @@ dishka = "^1.7.2"
 adaptix = "^3.0.0b11"
 greenops-shared = {path = "../shared", develop = true}
 crudx = {path = "../crudx", develop = true}
+pyyaml = "^6.0"
+aiohttp = "^3.9"
+aiomqtt = "^2.0"
+python-miio = "^0.5.12"
+aiokafka = "^0.11"
 
 [build-system]
 requires = ["poetry-core"]
