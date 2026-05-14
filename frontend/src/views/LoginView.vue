@@ -51,10 +51,10 @@
 
 <script setup>
 import { ref } from 'vue';
-import { authApi } from '../api/index.js';
+import { authApi, usersApi, userRolesApi } from '../api/index.js';
 import { useAuth } from '../composables/useAuth.js';
 
-const { setAuth } = useAuth();
+const { setAuth, setUserProfile } = useAuth();
 
 const mode = ref('login');
 const loading = ref(false);
@@ -77,6 +77,15 @@ const submit = async () => {
     if (mode.value === 'login') {
       const { data } = await authApi.login({ email: form.value.email, password: form.value.password });
       setAuth(data);
+      try {
+        const [{ data: meData }, { data: rolesData }] = await Promise.all([
+          usersApi.me(),
+          userRolesApi.list(data.user_id),
+        ]);
+        setUserProfile(meData, rolesData);
+      } catch {
+        // login still succeeds; user gets PUBLIC-level access
+      }
     } else {
       const { data } = await authApi.register(form.value);
       successMsg.value = data.message || 'Registered. Please wait for account activation before signing in.';

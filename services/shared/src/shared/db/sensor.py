@@ -1,7 +1,7 @@
 from datetime import date
 from uuid import UUID, uuid4
 
-from sqlalchemy import Enum as SAEnum, ForeignKey, String
+from sqlalchemy import Enum as SAEnum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from shared.db.base import Base
@@ -28,4 +28,11 @@ class SensorModel(Base):
     )
     organization_id: Mapped[int | None] = mapped_column(
         ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True
+    )
+    # External platform integration. Both fields must be set together or both null.
+    external_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    provider: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("external_id", "provider", name="uq_sensors_external_id_provider"),
     )
