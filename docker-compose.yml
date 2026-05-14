@@ -17,7 +17,7 @@ services:
       retries: 10
 
   nats:
-    image: nats:latest
+    image: nats:alpine
     container_name: greenops_nats
     command: ["--jetstream", "--http_port", "8222"]
     ports:
