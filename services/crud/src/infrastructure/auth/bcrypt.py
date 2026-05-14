@@ -14,7 +14,9 @@ class BcryptSecurityGateway(SecurityGateway):
         hashed = bcrypt.hashpw(password.encode(self.encoding), bcrypt.gensalt())
         return PasswordDto(hashed_password=hashed.decode(self.encoding), salt="")
 
-    def verify_passwords(self, plain_password: str, hashed_password: PasswordDto) -> bool:
+    def verify_passwords(
+        self, plain_password: str, hashed_password: PasswordDto
+    ) -> bool:
         return bcrypt.checkpw(
             plain_password.encode(self.encoding),
             hashed_password.hashed_password.encode(self.encoding),

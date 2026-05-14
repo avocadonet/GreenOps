@@ -17,7 +17,9 @@ class UserModel(Base):
     salt: Mapped[str] = mapped_column(String(255), nullable=False)
     telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(tz=timezone.utc)
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(tz=timezone.utc),
     )
     role: Mapped[str] = mapped_column(
         String(64), nullable=False, server_default="PUBLIC"

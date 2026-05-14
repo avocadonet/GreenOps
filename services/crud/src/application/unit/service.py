@@ -26,20 +26,37 @@ class UnitService:
     def _check(self, user: User, *perms: PermissionsEnum) -> None:
         PermissionBuilder().providers(UserPermissionProvider(user)).add(*perms).apply()
 
-    async def _check_org(self, user: User, organization_id: int, *perms: PermissionsEnum) -> None:
+    async def _check_org(
+        self, user: User, organization_id: int, *perms: PermissionsEnum
+    ) -> None:
         org_role = await self._role_getter(user, organization_id)
-        PermissionBuilder().providers(OrgPermissionProvider(org_role)).add(*perms).apply()
+        PermissionBuilder().providers(OrgPermissionProvider(org_role)).add(
+            *perms
+        ).apply()
 
-    async def list_all(self, user: User, building_id: UUID | None, organization_id: int | None, page: int, page_size: int) -> list[Unit]:
+    async def list_all(
+        self,
+        user: User,
+        building_id: UUID | None,
+        organization_id: int | None,
+        page: int,
+        page_size: int,
+    ) -> list[Unit]:
         if organization_id is not None:
             await self._check_org(user, organization_id, PermissionsEnum.CAN_READ_UNIT)
-            return await self._repository.list_all(building_id, organization_id, page, page_size)
+            return await self._repository.list_all(
+                building_id, organization_id, page, page_size
+            )
 
         all_roles = await self._role_getter.all_roles(user)
-        builder = PermissionBuilder().providers(
-            UserPermissionProvider(user),
-            *[OrgPermissionProvider(r) for r in all_roles],
-        ).add(PermissionsEnum.CAN_READ_UNIT)
+        builder = (
+            PermissionBuilder()
+            .providers(
+                UserPermissionProvider(user),
+                *[OrgPermissionProvider(r) for r in all_roles],
+            )
+            .add(PermissionsEnum.CAN_READ_UNIT)
+        )
         builder.apply()
         scope = builder.scope_for(PermissionsEnum.CAN_READ_UNIT)
 
@@ -50,7 +67,9 @@ class UnitService:
 
     async def create(self, user: User, dto: CreateUnitDTO) -> Unit:
         if dto.organization_id is not None:
-            await self._check_org(user, dto.organization_id, PermissionsEnum.CAN_CREATE_UNIT)
+            await self._check_org(
+                user, dto.organization_id, PermissionsEnum.CAN_CREATE_UNIT
+            )
         else:
             self._check(user, PermissionsEnum.CAN_CREATE_UNIT)
         return await self._repository.create(dto)
@@ -58,7 +77,9 @@ class UnitService:
     async def read(self, user: User, unit_id: UUID) -> Unit:
         unit = await self._repository.read(unit_id)
         if unit.organization_id is not None:
-            await self._check_org(user, unit.organization_id, PermissionsEnum.CAN_READ_UNIT)
+            await self._check_org(
+                user, unit.organization_id, PermissionsEnum.CAN_READ_UNIT
+            )
         else:
             self._check(user, PermissionsEnum.CAN_READ_UNIT)
         return unit
@@ -67,7 +88,9 @@ class UnitService:
         async with self._tx:
             unit = await self._repository.read(dto.unit_id)
             if unit.organization_id is not None:
-                await self._check_org(user, unit.organization_id, PermissionsEnum.CAN_UPDATE_UNIT)
+                await self._check_org(
+                    user, unit.organization_id, PermissionsEnum.CAN_UPDATE_UNIT
+                )
             else:
                 self._check(user, PermissionsEnum.CAN_UPDATE_UNIT)
             unit.unit_number = dto.unit_number
@@ -79,7 +102,9 @@ class UnitService:
         async with self._tx:
             unit = await self._repository.read(unit_id)
             if unit.organization_id is not None:
-                await self._check_org(user, unit.organization_id, PermissionsEnum.CAN_DELETE_UNIT)
+                await self._check_org(
+                    user, unit.organization_id, PermissionsEnum.CAN_DELETE_UNIT
+                )
             else:
                 self._check(user, PermissionsEnum.CAN_DELETE_UNIT)
             return await self._repository.delete(unit)

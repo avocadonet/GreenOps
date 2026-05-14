@@ -42,7 +42,9 @@ class BuildingDatabaseRepository(
         )
 
     @decorators.read_all
-    async def list_all(self, organization_id: int | None, page: int, page_size: int) -> list[Building]:
+    async def list_all(
+        self, organization_id: int | None, page: int, page_size: int
+    ) -> list[Building]:
         stmt = select(BuildingModel)
         if organization_id is not None:
             stmt = stmt.where(BuildingModel.organization_id == organization_id)

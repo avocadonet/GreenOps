@@ -21,7 +21,9 @@ class TestSensorCRUD:
         assert body["sensor_type"] == "COMMON"
         assert body["building_id"] == building["building_id"]
         assert body["unit_id"] is None
-        await client.delete(f"/sensors/{body['sensor_id']}", headers=auth(admin["token"]))
+        await client.delete(
+            f"/sensors/{body['sensor_id']}", headers=auth(admin["token"])
+        )
 
     async def test_create_individual_sensor(self, client, admin, unit):
         r = await client.post(
@@ -40,17 +42,25 @@ class TestSensorCRUD:
         assert body["sensor_type"] == "INDIVIDUAL"
         assert body["unit_id"] == unit["unit_id"]
         assert body["building_id"] is None
-        await client.delete(f"/sensors/{body['sensor_id']}", headers=auth(admin["token"]))
+        await client.delete(
+            f"/sensors/{body['sensor_id']}", headers=auth(admin["token"])
+        )
 
     async def test_read_sensor(self, client, admin, common_sensor):
-        r = await client.get(f"/sensors/{common_sensor['sensor_id']}", headers=auth(admin["token"]))
+        r = await client.get(
+            f"/sensors/{common_sensor['sensor_id']}", headers=auth(admin["token"])
+        )
         assert r.status_code == 200
         assert r.json()["sensor_id"] == common_sensor["sensor_id"]
 
     async def test_update_sensor(self, client, admin, common_sensor):
         r = await client.put(
             f"/sensors/{common_sensor['sensor_id']}",
-            json={"serial_number": "SN-UPDATED", "model": "Updated Model", "calibration_date": "2025-01-01"},
+            json={
+                "serial_number": "SN-UPDATED",
+                "model": "Updated Model",
+                "calibration_date": "2025-01-01",
+            },
             headers=auth(admin["token"]),
         )
         assert r.status_code == 200
@@ -127,7 +137,9 @@ class TestSensorAttachmentValidation:
         )
         assert r.status_code == 422
 
-    async def test_individual_sensor_requires_unit_not_building(self, client, admin, building):
+    async def test_individual_sensor_requires_unit_not_building(
+        self, client, admin, building
+    ):
         r = await client.post(
             "/sensors",
             json={

@@ -7,7 +7,11 @@ from infrastructure.api.dependencies import get_current_user
 from infrastructure.api.schemas import ErrorModel, PaginatedResponse
 
 from . import mappers
-from .schemas import CreateOrganizationRequest, OrganizationResponse, UpdateOrganizationRequest
+from .schemas import (
+    CreateOrganizationRequest,
+    OrganizationResponse,
+    UpdateOrganizationRequest,
+)
 
 router = APIRouter(
     prefix="/organizations",

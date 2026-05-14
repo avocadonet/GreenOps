@@ -29,27 +29,48 @@ class SensorService:
     def _check(self, user: User, *perms: PermissionsEnum) -> None:
         PermissionBuilder().providers(UserPermissionProvider(user)).add(*perms).apply()
 
-    async def _check_org(self, user: User, organization_id: int, *perms: PermissionsEnum) -> None:
+    async def _check_org(
+        self, user: User, organization_id: int, *perms: PermissionsEnum
+    ) -> None:
         org_role = await self._role_getter(user, organization_id)
-        PermissionBuilder().providers(OrgPermissionProvider(org_role)).add(*perms).apply()
+        PermissionBuilder().providers(OrgPermissionProvider(org_role)).add(
+            *perms
+        ).apply()
 
-    async def list_all(self, user: User, building_id: UUID | None, organization_id: int | None, page: int, page_size: int) -> list[Sensor]:
+    async def list_all(
+        self,
+        user: User,
+        building_id: UUID | None,
+        organization_id: int | None,
+        page: int,
+        page_size: int,
+    ) -> list[Sensor]:
         if organization_id is not None:
-            await self._check_org(user, organization_id, PermissionsEnum.CAN_READ_SENSOR)
+            await self._check_org(
+                user, organization_id, PermissionsEnum.CAN_READ_SENSOR
+            )
             if building_id is not None:
-                return await self._repository.list_by_building(building_id, page, page_size)
+                return await self._repository.list_by_building(
+                    building_id, page, page_size
+                )
             return await self._repository.list_all(organization_id, page, page_size)
 
         all_roles = await self._role_getter.all_roles(user)
-        builder = PermissionBuilder().providers(
-            UserPermissionProvider(user),
-            *[OrgPermissionProvider(r) for r in all_roles],
-        ).add(PermissionsEnum.CAN_READ_SENSOR)
+        builder = (
+            PermissionBuilder()
+            .providers(
+                UserPermissionProvider(user),
+                *[OrgPermissionProvider(r) for r in all_roles],
+            )
+            .add(PermissionsEnum.CAN_READ_SENSOR)
+        )
         builder.apply()
         scope = builder.scope_for(PermissionsEnum.CAN_READ_SENSOR)
 
         if building_id is not None:
-            items = await self._repository.list_by_building(building_id, page, page_size)
+            items = await self._repository.list_by_building(
+                building_id, page, page_size
+            )
         else:
             items = await self._repository.list_all(None, page, page_size)
         if scope is not None:
@@ -58,7 +79,9 @@ class SensorService:
 
     async def create(self, user: User, dto: CreateSensorDTO) -> Sensor:
         if dto.organization_id is not None:
-            await self._check_org(user, dto.organization_id, PermissionsEnum.CAN_CREATE_SENSOR)
+            await self._check_org(
+                user, dto.organization_id, PermissionsEnum.CAN_CREATE_SENSOR
+            )
         else:
             self._check(user, PermissionsEnum.CAN_CREATE_SENSOR)
         self._validate_attachment(dto.sensor_type, dto.building_id, dto.unit_id)
@@ -67,16 +90,27 @@ class SensorService:
     async def read(self, user: User, sensor_id: UUID) -> Sensor:
         sensor = await self._repository.read(sensor_id)
         if sensor.organization_id is not None:
-            await self._check_org(user, sensor.organization_id, PermissionsEnum.CAN_READ_SENSOR)
+            await self._check_org(
+                user, sensor.organization_id, PermissionsEnum.CAN_READ_SENSOR
+            )
         else:
             self._check(user, PermissionsEnum.CAN_READ_SENSOR)
         return sensor
 
-    async def update(self, user: User, sensor_id: UUID, serial_number: str, model: str, calibration_date: date) -> Sensor:
+    async def update(
+        self,
+        user: User,
+        sensor_id: UUID,
+        serial_number: str,
+        model: str,
+        calibration_date: date,
+    ) -> Sensor:
         async with self._tx:
             sensor = await self._repository.read(sensor_id)
             if sensor.organization_id is not None:
-                await self._check_org(user, sensor.organization_id, PermissionsEnum.CAN_UPDATE_SENSOR)
+                await self._check_org(
+                    user, sensor.organization_id, PermissionsEnum.CAN_UPDATE_SENSOR
+                )
             else:
                 self._check(user, PermissionsEnum.CAN_UPDATE_SENSOR)
             sensor.serial_number = serial_number
@@ -88,7 +122,9 @@ class SensorService:
         async with self._tx:
             sensor = await self._repository.read(sensor_id)
             if sensor.organization_id is not None:
-                await self._check_org(user, sensor.organization_id, PermissionsEnum.CAN_DELETE_SENSOR)
+                await self._check_org(
+                    user, sensor.organization_id, PermissionsEnum.CAN_DELETE_SENSOR
+                )
             else:
                 self._check(user, PermissionsEnum.CAN_DELETE_SENSOR)
             return await self._repository.delete(sensor)

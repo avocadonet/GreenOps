@@ -12,6 +12,10 @@ org__map_to_db = retort.get_converter(Organization, OrganizationModel)
 org__create_mapper = retort.get_converter(
     CreateOrganizationDTO,
     OrganizationModel,
-    recipe=[allow_unlinked_optional(P[OrganizationModel].id, P[OrganizationModel].created_at)],
+    recipe=[
+        allow_unlinked_optional(
+            P[OrganizationModel].id, P[OrganizationModel].created_at
+        )
+    ],
 )
 # org__map_to_db is used for update/delete where entity is always read from DB first (id always set)

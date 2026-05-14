@@ -107,7 +107,9 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_constraint(
-        op.f("fk_thresholds_organization_id_organizations"), "thresholds", type_="foreignkey"
+        op.f("fk_thresholds_organization_id_organizations"),
+        "thresholds",
+        type_="foreignkey",
     )
     op.drop_column("thresholds", "organization_id")
     op.drop_constraint(
@@ -119,7 +121,9 @@ def downgrade() -> None:
     )
     op.drop_column("units", "organization_id")
     op.drop_constraint(
-        op.f("fk_buildings_organization_id_organizations"), "buildings", type_="foreignkey"
+        op.f("fk_buildings_organization_id_organizations"),
+        "buildings",
+        type_="foreignkey",
     )
     op.drop_column("buildings", "organization_id")
     op.drop_table("user_organization_roles")

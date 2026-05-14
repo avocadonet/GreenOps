@@ -39,7 +39,13 @@ class UnitDatabaseRepository(
         )
 
     @decorators.read_all
-    async def list_all(self, building_id: UUID | None, organization_id: int | None, page: int, page_size: int) -> list[Unit]:
+    async def list_all(
+        self,
+        building_id: UUID | None,
+        organization_id: int | None,
+        page: int,
+        page_size: int,
+    ) -> list[Unit]:
         stmt = select(UnitModel)
         if building_id is not None:
             stmt = stmt.where(UnitModel.building_id == building_id)

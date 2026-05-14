@@ -7,7 +7,9 @@ from shared.entities.building import Building
 
 class BuildingRepository(ABC):
     @abstractmethod
-    async def list_all(self, organization_id: int | None, page: int, page_size: int) -> list[Building]: ...
+    async def list_all(
+        self, organization_id: int | None, page: int, page_size: int
+    ) -> list[Building]: ...
 
     @abstractmethod
     async def create(self, dto: CreateBuildingDTO) -> Building: ...

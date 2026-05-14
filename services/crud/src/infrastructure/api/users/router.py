@@ -30,8 +30,15 @@ async def list_users(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
-    items = await service.list_all(ReadAllUsersDto(page=page, page_size=page_size), user)
-    return PaginatedResponse(items=[mappers.user_to_response(u) for u in items], page=page, page_size=page_size)
+    items = await service.list_all(
+        ReadAllUsersDto(page=page, page_size=page_size), user
+    )
+    return PaginatedResponse(
+        items=[mappers.user_to_response(u) for u in items],
+        page=page,
+        page_size=page_size,
+    )
+
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(user: User = Depends(get_current_user)):

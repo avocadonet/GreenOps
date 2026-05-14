@@ -18,7 +18,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("sensors", sa.Column("external_id", sa.String(length=128), nullable=True))
+    op.add_column(
+        "sensors", sa.Column("external_id", sa.String(length=128), nullable=True)
+    )
     op.add_column("sensors", sa.Column("provider", sa.String(length=64), nullable=True))
     op.create_unique_constraint(
         "uq_sensors_external_id_provider", "sensors", ["external_id", "provider"]

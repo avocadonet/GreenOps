@@ -37,7 +37,7 @@ class AuthService:
         create_dto = CreateUserWithPasswordDto(
             email=dto.email,
             fullname=dto.fullname,
-            is_active=True, # TODO: add verification by email
+            is_active=True,  # TODO: add verification by email
             salt=password_dto.salt,
             hashed_password=password_dto.hashed_password,
         )

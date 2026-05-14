@@ -16,6 +16,7 @@ import asyncio
 import math
 import random
 import uuid
+import os
 from datetime import date, datetime, timedelta
 
 import asyncpg
@@ -25,11 +26,36 @@ import bcrypt
 # ── fixtures ──────────────────────────────────────────────────────────────────
 
 USERS = [
-    dict(email="super@greenops.io",        fullname="Super Admin",          password="greenops2024", role="SUPER_USER"),
-    dict(email="admin@ecoresidence.io",    fullname="EcoRes Admin",         password="admin123",     role="PUBLIC"),
-    dict(email="admin@industrialops.io",   fullname="IndustrialOps Admin",  password="admin123",     role="PUBLIC"),
-    dict(email="redactor@ecoresidence.io", fullname="EcoRes Redactor",      password="redactor123",  role="PUBLIC"),
-    dict(email="owner@ecoresidence.io",    fullname="Unit Owner",           password="owner123",     role="PUBLIC"),
+    dict(
+        email="super@greenops.io",
+        fullname="Super Admin",
+        password=os.environ.get("SUPERUSER_PASSWORD", "SUPERUSER_PASSWORD"),
+        role="SUPER_USER",
+    ),
+    dict(
+        email="admin@ecoresidence.io",
+        fullname="EcoRes Admin",
+        password=os.environ.get("SUPERUSER_PASSWORD", "SUPERUSER_PASSWORD"),
+        role="PUBLIC",
+    ),
+    dict(
+        email="admin@industrialops.io",
+        fullname="IndustrialOps Admin",
+        password=os.environ.get("SUPERUSER_PASSWORD", "SUPERUSER_PASSWORD"),
+        role="PUBLIC",
+    ),
+    dict(
+        email="redactor@ecoresidence.io",
+        fullname="EcoRes Redactor",
+        password=os.environ.get("SUPERUSER_PASSWORD", "SUPERUSER_PASSWORD"),
+        role="PUBLIC",
+    ),
+    dict(
+        email="owner@ecoresidence.io",
+        fullname="Unit Owner",
+        password=os.environ.get("SUPERUSER_PASSWORD", "SUPERUSER_PASSWORD"),
+        role="PUBLIC",
+    ),
 ]
 
 ORGS = [
@@ -49,10 +75,10 @@ ORGS = [
 
 # email → list of (org_name, role)
 ORG_ROLES: dict[str, list[tuple[str, str]]] = {
-    "admin@ecoresidence.io":    [("EcoResidence Management", "ADMIN")],
-    "admin@industrialops.io":   [("IndustrialOps Corp",      "ADMIN")],
+    "admin@ecoresidence.io": [("EcoResidence Management", "ADMIN")],
+    "admin@industrialops.io": [("IndustrialOps Corp", "ADMIN")],
     "redactor@ecoresidence.io": [("EcoResidence Management", "REDACTOR")],
-    "owner@ecoresidence.io":    [("EcoResidence Management", "OWNER")],
+    "owner@ecoresidence.io": [("EcoResidence Management", "OWNER")],
 }
 
 BUILDINGS = [
@@ -61,23 +87,35 @@ BUILDINGS = [
         address="12 Oak Street, Building A",
         building_type="RESIDENTIAL",
         total_area=4500.0,
-        units=[("101", 1, "John Smith"), ("102", 1, "Maria Garcia"),
-               ("201", 2, "Robert Johnson"), ("202", 2, "Emily Davis")],
+        units=[
+            ("101", 1, "John Smith"),
+            ("102", 1, "Maria Garcia"),
+            ("201", 2, "Robert Johnson"),
+            ("202", 2, "Emily Davis"),
+        ],
     ),
     dict(
         org="EcoResidence Management",
         address="48 Maple Avenue",
         building_type="RESIDENTIAL",
         total_area=3200.0,
-        units=[("A1", 1, "Carlos Ruiz"), ("A2", 1, "Ling Wei"), ("B1", 2, "Natasha Ivanova")],
+        units=[
+            ("A1", 1, "Carlos Ruiz"),
+            ("A2", 1, "Ling Wei"),
+            ("B1", 2, "Natasha Ivanova"),
+        ],
     ),
     dict(
         org="EcoResidence Management",
         address="7 Birch Lane, Complex C",
         building_type="RESIDENTIAL",
         total_area=6100.0,
-        units=[("1A", 1, "Michael Brown"), ("1B", 1, "Sarah Connor"),
-               ("2A", 2, "David Park"),    ("2B", 2, "Amara Osei")],
+        units=[
+            ("1A", 1, "Michael Brown"),
+            ("1B", 1, "Sarah Connor"),
+            ("2A", 2, "David Park"),
+            ("2B", 2, "Amara Osei"),
+        ],
     ),
     dict(
         org="IndustrialOps Corp",
@@ -100,22 +138,23 @@ SENSOR_MODELS = ["SmartMeter Pro X1", "EnergyNode 500", "GridSense v3", "PowerEy
 THRESHOLDS = {
     "RESIDENTIAL": {
         "UPPER": {"DAY": 120.0, "NIGHT": 80.0},
-        "LOWER": {"DAY": 2.0,   "NIGHT": 1.0},
+        "LOWER": {"DAY": 2.0, "NIGHT": 1.0},
     },
     "INDUSTRIAL": {
         "UPPER": {"DAY": 600.0, "NIGHT": 350.0},
-        "LOWER": {"DAY": 20.0,  "NIGHT": 10.0},
+        "LOWER": {"DAY": 20.0, "NIGHT": 10.0},
     },
 }
 INDIV_THRESHOLDS = {
     "UPPER": {"DAY": 40.0, "NIGHT": 25.0},
-    "LOWER": {"DAY": 0.5,  "NIGHT": 0.2},
+    "LOWER": {"DAY": 0.5, "NIGHT": 0.2},
 }
 
 SPIKE_PROB = 0.06
 
 
 # ── metric helpers ────────────────────────────────────────────────────────────
+
 
 def _diurnal(hour: int, minute: int, is_residential: bool) -> float:
     t = hour + minute / 60.0
@@ -144,6 +183,7 @@ def _gen_reading(
 
 # ── seeder ────────────────────────────────────────────────────────────────────
 
+
 async def seed(conn: asyncpg.Connection, days: int) -> None:
     now = datetime.utcnow()
 
@@ -159,7 +199,11 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
             ON CONFLICT (email) DO UPDATE SET hashed_password = EXCLUDED.hashed_password
             RETURNING id
             """,
-            u["email"], u["fullname"], hashed, u["role"], now,
+            u["email"],
+            u["fullname"],
+            hashed,
+            u["role"],
+            now,
         )
         user_ids[u["email"]] = row["id"]
         print(f"  [{u['role']:20s}] {u['email']}  password={u['password']}")
@@ -176,10 +220,16 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
             ON CONFLICT DO NOTHING
             RETURNING id
             """,
-            o["name"], o["description"], o["contact_email"], owner_id, now,
+            o["name"],
+            o["description"],
+            o["contact_email"],
+            owner_id,
+            now,
         )
         if row is None:
-            row = await conn.fetchrow("SELECT id FROM organizations WHERE name = $1", o["name"])
+            row = await conn.fetchrow(
+                "SELECT id FROM organizations WHERE name = $1", o["name"]
+            )
         org_ids[o["name"]] = row["id"]
         print(f"  {o['name']}  id={row['id']}")
 
@@ -195,7 +245,9 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
                 VALUES ($1, $2, $3)
                 ON CONFLICT (user_id, organization_id) DO UPDATE SET role = EXCLUDED.role
                 """,
-                uid, oid, role,
+                uid,
+                oid,
+                role,
             )
             print(f"  {email:40s} → {org_name} ({role})")
 
@@ -217,7 +269,11 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
             INSERT INTO buildings (building_id, address, building_type, total_area, organization_id)
             VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING
             """,
-            building_id, b["address"], btype, b["total_area"], org_id,
+            building_id,
+            b["address"],
+            btype,
+            b["total_area"],
+            org_id,
         )
 
         # COMMON sensor (building meter)
@@ -229,8 +285,12 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
             ON CONFLICT (serial_number) DO UPDATE SET model = EXCLUDED.model
             RETURNING sensor_id
             """,
-            uuid.uuid4(), f"SN-{serial:04d}", SENSOR_MODELS[(serial - 1) % len(SENSOR_MODELS)],
-            calib, building_id, org_id,
+            uuid.uuid4(),
+            f"SN-{serial:04d}",
+            SENSOR_MODELS[(serial - 1) % len(SENSOR_MODELS)],
+            calib,
+            building_id,
+            org_id,
         )
         common_id = row["sensor_id"]
         thr = THRESHOLDS[btype]
@@ -243,16 +303,23 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
                         (threshold_id, sensor_id, limit_value, threshold_type, tariff_zone, organization_id)
                     VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING
                     """,
-                    uuid.uuid4(), common_id, val, ttype, zone, org_id,
+                    uuid.uuid4(),
+                    common_id,
+                    val,
+                    ttype,
+                    zone,
+                    org_id,
                 )
-        sensor_meta.append(dict(
-            sensor_id=common_id,
-            sensor_type="COMMON",
-            building_id=building_id,
-            baseline=75.0 if btype == "RESIDENTIAL" else 450.0,
-            is_residential=(btype == "RESIDENTIAL"),
-            upper=upper,
-        ))
+        sensor_meta.append(
+            dict(
+                sensor_id=common_id,
+                sensor_type="COMMON",
+                building_id=building_id,
+                baseline=75.0 if btype == "RESIDENTIAL" else 450.0,
+                is_residential=(btype == "RESIDENTIAL"),
+                upper=upper,
+            )
+        )
         serial += 1
 
         # units + INDIVIDUAL sensors
@@ -263,7 +330,12 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
                 INSERT INTO units (unit_id, building_id, unit_number, floor, owner_name, organization_id)
                 VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING
                 """,
-                unit_id, building_id, unit_num, floor, owner, org_id,
+                unit_id,
+                building_id,
+                unit_num,
+                floor,
+                owner,
+                org_id,
             )
             row = await conn.fetchrow(
                 """
@@ -273,8 +345,12 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
                 ON CONFLICT (serial_number) DO UPDATE SET model = EXCLUDED.model
                 RETURNING sensor_id
                 """,
-                uuid.uuid4(), f"SN-{serial:04d}", SENSOR_MODELS[(serial - 1) % len(SENSOR_MODELS)],
-                calib, unit_id, org_id,
+                uuid.uuid4(),
+                f"SN-{serial:04d}",
+                SENSOR_MODELS[(serial - 1) % len(SENSOR_MODELS)],
+                calib,
+                unit_id,
+                org_id,
             )
             indiv_id = row["sensor_id"]
             for ttype, zones in INDIV_THRESHOLDS.items():
@@ -285,23 +361,34 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
                             (threshold_id, sensor_id, limit_value, threshold_type, tariff_zone, organization_id)
                         VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING
                         """,
-                        uuid.uuid4(), indiv_id, val, ttype, zone, org_id,
+                        uuid.uuid4(),
+                        indiv_id,
+                        val,
+                        ttype,
+                        zone,
+                        org_id,
                     )
-            sensor_meta.append(dict(
-                sensor_id=indiv_id,
-                sensor_type="INDIVIDUAL",
-                building_id=building_id,
-                baseline=15.0,
-                is_residential=True,
-                upper=INDIV_THRESHOLDS["UPPER"]["DAY"],
-            ))
+            sensor_meta.append(
+                dict(
+                    sensor_id=indiv_id,
+                    sensor_type="INDIVIDUAL",
+                    building_id=building_id,
+                    baseline=15.0,
+                    is_residential=True,
+                    upper=INDIV_THRESHOLDS["UPPER"]["DAY"],
+                )
+            )
             serial += 1
 
-        print(f"  {b['address'][:45]}  ({len(b['units'])} units, {1 + len(b['units'])} sensors)")
+        print(
+            f"  {b['address'][:45]}  ({len(b['units'])} units, {1 + len(b['units'])} sensors)"
+        )
 
     # ── metrics ───────────────────────────────────────────────────────────────
     print(f"\nGenerating {days} days of metrics (30-min intervals) …")
-    start = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days)
+    start = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(
+        days=days
+    )
     slots = [start + timedelta(minutes=i * 30) for i in range(days * 48)]
 
     total_metrics = 0
@@ -310,7 +397,9 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
         readings: list[float] = []
         rows = []
         for dt in slots:
-            val, volt, curr = _gen_reading(dt, s["baseline"], s["is_residential"], s["upper"])
+            val, volt, curr = _gen_reading(
+                dt, s["baseline"], s["is_residential"], s["upper"]
+            )
             readings.append(val)
             rows.append((uuid.uuid4(), s["sensor_id"], val, volt, curr, "kWh", dt))
         await conn.executemany(
@@ -337,11 +426,15 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
         for day_i in range(days):
             day_vals = vals[day_i * rpd : (day_i + 1) * rpd]
             if day_vals:
-                avg_rows.append((
-                    uuid.uuid4(), s["sensor_id"], "DAY",
-                    round(sum(day_vals) / len(day_vals), 4),
-                    start + timedelta(days=day_i + 1),
-                ))
+                avg_rows.append(
+                    (
+                        uuid.uuid4(),
+                        s["sensor_id"],
+                        "DAY",
+                        round(sum(day_vals) / len(day_vals), 4),
+                        start + timedelta(days=day_i + 1),
+                    )
+                )
     await conn.executemany(
         """
         INSERT INTO average_loads (avg_load_id, sensor_id, window_size, mean_value, calculated_at)
@@ -364,9 +457,9 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
         for day_i in range(days):
             sl = slice(day_i * rpd, (day_i + 1) * rpd)
             day_start = start + timedelta(days=day_i)
-            day_end   = day_start + timedelta(days=1)
+            day_end = day_start + timedelta(days=1)
             common_kwh = sum(sum(sensor_readings[sid][sl]) for sid in grp["COMMON"])
-            indiv_kwh  = sum(sum(sensor_readings[sid][sl]) for sid in grp["INDIVIDUAL"])
+            indiv_kwh = sum(sum(sensor_readings[sid][sl]) for sid in grp["INDIVIDUAL"])
             if common_kwh <= 0:
                 continue
             if indiv_kwh > 0:
@@ -374,7 +467,9 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
             else:
                 loss_kwh = round(common_kwh * random.uniform(0.05, 0.18), 2)
             loss_pct = round(loss_kwh / common_kwh * 100, 2)
-            eb_rows.append((uuid.uuid4(), bid_uuid, day_start, day_end, loss_kwh, loss_pct))
+            eb_rows.append(
+                (uuid.uuid4(), bid_uuid, day_start, day_end, loss_kwh, loss_pct)
+            )
     await conn.executemany(
         """
         INSERT INTO energy_balances
@@ -391,11 +486,15 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
         vals = sensor_readings[str(s["sensor_id"])]
         for i, val in enumerate(vals):
             if val > s["upper"]:
-                peak_rows.append((
-                    uuid.uuid4(), s["sensor_id"], val,
-                    round(random.uniform(120, 900), 1),
-                    slots[i],
-                ))
+                peak_rows.append(
+                    (
+                        uuid.uuid4(),
+                        s["sensor_id"],
+                        val,
+                        round(random.uniform(120, 900), 1),
+                        slots[i],
+                    )
+                )
     # keep at most ~5 peaks per week to avoid flooding the table
     budget = max(5, days // 7 * 5 * len(sensor_meta))
     if len(peak_rows) > budget:
@@ -437,7 +536,7 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
     print("\nDone.")
     print("\nCredentials summary:")
     print(f"  {'email':40s} {'password':15s} {'role'}")
-    print(f"  {'-'*72}")
+    print(f"  {'-' * 72}")
     for u in USERS:
         org_info = ", ".join(f"{org}({r})" for org, r in ORG_ROLES.get(u["email"], []))
         print(f"  {u['email']:40s} {u['password']:15s} {u['role']}  {org_info}")
@@ -446,9 +545,17 @@ async def seed(conn: asyncpg.Connection, days: int) -> None:
 async def clean(conn: asyncpg.Connection) -> None:
     print("Cleaning all tables …")
     tables = [
-        "incidents", "peak_loads", "energy_balances", "average_loads",
-        "metrics", "thresholds", "sensors", "units", "buildings",
-        "user_organization_roles", "organizations", # "users",
+        "incidents",
+        "peak_loads",
+        "energy_balances",
+        "average_loads",
+        "metrics",
+        "thresholds",
+        "sensors",
+        "units",
+        "buildings",
+        "user_organization_roles",
+        "organizations",  # "users",
     ]
     for t in tables:
         await conn.execute(f"DELETE FROM {t}")
@@ -473,6 +580,8 @@ if __name__ == "__main__":
         default="postgresql://user:password@127.0.0.1:5432/greenops_db",
     )
     parser.add_argument("--days", type=int, default=7, help="Days of metric history")
-    parser.add_argument("--clean", action="store_true", help="Wipe all tables before seeding")
+    parser.add_argument(
+        "--clean", action="store_true", help="Wipe all tables before seeding"
+    )
     args = parser.parse_args()
     asyncio.run(run(args.database_url, args.days, args.clean))

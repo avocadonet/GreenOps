@@ -107,8 +107,8 @@ def read_all[Entity](func: Optional[Callable] = None):
             params = getcallargs(method, self, *args, **kwargs)
             params.pop("self")
 
-            params["page"] =  params.pop("page", 10)
-            params["page_size"] =  params.pop("page_size", 10)
+            params["page"] = params.pop("page", 10)
+            params["page_size"] = params.pop("page_size", 10)
 
             models = []
             result = await method(self, **params)
@@ -120,7 +120,12 @@ def read_all[Entity](func: Optional[Callable] = None):
                     models = await self.gateway.select_by_fields_all(**dto_as_dict)
                 if isinstance(result, Select):
                     models = await self.gateway.select_by_query_all(
-                        self.gateway.with_pagination(result, PageSpec(page=params["page"], page_size=params["page_size"]))
+                        self.gateway.with_pagination(
+                            result,
+                            PageSpec(
+                                page=params["page"], page_size=params["page_size"]
+                            ),
+                        )
                     )
 
             return list(self.config.model_mapper(m) for m in models)

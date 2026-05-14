@@ -116,20 +116,24 @@ class TuyaClient:
         timestamp = str(int(time.time() * 1000))
         nonce = uuid.uuid4().hex
 
-        body_hash   = hashlib.sha256(body.encode()).hexdigest()
-        query       = path.split("?", 1)[1] if "?" in path else ""
-        path_clean  = path.split("?", 1)[0]
-        query_hash  = hashlib.sha256(query.encode()).hexdigest()
+        body_hash = hashlib.sha256(body.encode()).hexdigest()
+        query = path.split("?", 1)[1] if "?" in path else ""
+        path_clean = path.split("?", 1)[0]
+        query_hash = hashlib.sha256(query.encode()).hexdigest()
 
         string_to_sign = (
             f"{self._client_id}{access_token}{timestamp}{nonce}"
             f"\n{method.upper()}\n{body_hash}\n{query_hash}\n{path_clean}"
         )
-        sign = hmac.new(
-            self._client_secret.encode(),
-            string_to_sign.encode(),
-            hashlib.sha256,
-        ).hexdigest().upper()
+        sign = (
+            hmac.new(
+                self._client_secret.encode(),
+                string_to_sign.encode(),
+                hashlib.sha256,
+            )
+            .hexdigest()
+            .upper()
+        )
 
         return sign, timestamp, nonce
 
@@ -140,14 +144,14 @@ class TuyaClient:
         body: str = "",
         with_token: bool = True,
     ) -> dict:
-        token  = self._access_token if with_token else ""
+        token = self._access_token if with_token else ""
         sign, ts, nonce = self._sign(method, path, body, token)
         return {
-            "client_id":   self._client_id,
+            "client_id": self._client_id,
             "access_token": token,
-            "sign":        sign,
-            "t":           ts,
-            "nonce":       nonce,
+            "sign": sign,
+            "t": ts,
+            "nonce": nonce,
             "sign_method": "HMAC-SHA256",
             "Content-Type": "application/json",
         }
@@ -176,9 +180,11 @@ class TuyaClient:
         if not payload.get("success"):
             raise TuyaAPIError(f"Token request failed: {payload}")
         result = payload["result"]
-        self._access_token   = result["access_token"]
+        self._access_token = result["access_token"]
         self._token_expire_at = time.time() + result.get("expire_time", 7200) - 60
-        logger.debug("[tuya] token refreshed, expires in %ss", result.get("expire_time"))
+        logger.debug(
+            "[tuya] token refreshed, expires in %ss", result.get("expire_time")
+        )
 
     async def _ensure_token(self) -> None:
         if time.time() >= self._token_expire_at:

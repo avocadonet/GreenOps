@@ -38,10 +38,10 @@ from adapters.tuya.client import TuyaClient
 logger = logging.getLogger(__name__)
 
 # Tuya data-point codes that carry energy/power readings
-_DP_ENERGY    = "add_ele"      # accumulated kWh (float)
-_DP_POWER     = "cur_power"    # current power in 0.1 W
-_DP_VOLTAGE   = "cur_voltage"  # voltage in 0.1 V
-_DP_CURRENT   = "cur_current"  # current in mA
+_DP_ENERGY = "add_ele"  # accumulated kWh (float)
+_DP_POWER = "cur_power"  # current power in 0.1 W
+_DP_VOLTAGE = "cur_voltage"  # voltage in 0.1 V
+_DP_CURRENT = "cur_current"  # current in mA
 
 # Fallback values when a device does not expose voltage/current
 _DEFAULT_VOLTAGE = 220.0
@@ -114,21 +114,26 @@ class TuyaAdapter(SensorAdapter):
 
         # Prefer accumulated energy counter (delta between polls)
         if _DP_ENERGY in dp:
-            raw_energy = dp[_DP_ENERGY]            # already in kWh
+            raw_energy = dp[_DP_ENERGY]  # already in kWh
             last = self._last_energy.get(device_id, raw_energy)
             delta_kwh = max(0.0, raw_energy - last) * mapping.scale
             self._last_energy[device_id] = raw_energy
         else:
             # Fall back to instantaneous power → estimate kWh for the interval
-            power_w = dp.get(_DP_POWER, 0.0) / 10.0    # 0.1 W → W
-            delta_kwh = (power_w / 1000.0) * (self._poll_interval / 3600.0) * mapping.scale
+            power_w = dp.get(_DP_POWER, 0.0) / 10.0  # 0.1 W → W
+            delta_kwh = (
+                (power_w / 1000.0) * (self._poll_interval / 3600.0) * mapping.scale
+            )
 
         voltage = dp.get(_DP_VOLTAGE, _DEFAULT_VOLTAGE * 10) / 10.0  # 0.1 V → V
         current = dp.get(_DP_CURRENT, _DEFAULT_CURRENT * 1000) / 1000.0  # mA → A
 
         logger.debug(
             "[tuya] device=%s  %.4f kWh  %sV  %sA",
-            device_id, delta_kwh, voltage, current,
+            device_id,
+            delta_kwh,
+            voltage,
+            current,
         )
         return TelemetryMessage.build(
             sensor_id=mapping.sensor_id,

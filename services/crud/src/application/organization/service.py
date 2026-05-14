@@ -24,11 +24,17 @@ class OrganizationService:
     def _check(self, user: User, *perms: PermissionsEnum) -> None:
         PermissionBuilder().providers(UserPermissionProvider(user)).add(*perms).apply()
 
-    async def _check_org(self, user: User, organization_id: int, *perms: PermissionsEnum) -> None:
+    async def _check_org(
+        self, user: User, organization_id: int, *perms: PermissionsEnum
+    ) -> None:
         org_role = await self._role_getter(user, organization_id)
-        PermissionBuilder().providers(OrgPermissionProvider(org_role)).add(*perms).apply()
+        PermissionBuilder().providers(OrgPermissionProvider(org_role)).add(
+            *perms
+        ).apply()
 
-    async def list_all(self, user: User, page: int, page_size: int) -> list[Organization]:
+    async def list_all(
+        self, user: User, page: int, page_size: int
+    ) -> list[Organization]:
         self._check(user, PermissionsEnum.CAN_READ_ORGANIZATION)
         return await self._repository.list_all(page, page_size)
 

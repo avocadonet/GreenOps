@@ -34,5 +34,7 @@ class SensorModel(Base):
     provider: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     __table_args__ = (
-        UniqueConstraint("external_id", "provider", name="uq_sensors_external_id_provider"),
+        UniqueConstraint(
+            "external_id", "provider", name="uq_sensors_external_id_provider"
+        ),
     )

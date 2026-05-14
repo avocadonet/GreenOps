@@ -41,7 +41,9 @@ async def register(
     auth: FromDishka[AuthService],
 ):
     user = await auth.register(
-        RegisterUserDto(email=body.email, password=body.password, fullname=body.fullname)
+        RegisterUserDto(
+            email=body.email, password=body.password, fullname=body.fullname
+        )
     )
     return RegisterResponse(
         message="User registered. Activate your account to log in.",

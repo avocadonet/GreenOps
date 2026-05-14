@@ -17,7 +17,9 @@ from infrastructure.db.organization.repository import OrganizationDatabaseReposi
 from infrastructure.db.sensor.repository import SensorDatabaseRepository
 from infrastructure.db.threshold.repository import ThresholdDatabaseRepository
 from infrastructure.db.unit.repository import UnitDatabaseRepository
-from infrastructure.db.user_organization_role.repository import UserOrganizationRolesDatabaseRepository
+from infrastructure.db.user_organization_role.repository import (
+    UserOrganizationRolesDatabaseRepository,
+)
 
 
 class RepositoriesProvider(Provider):

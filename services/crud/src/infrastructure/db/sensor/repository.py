@@ -42,14 +42,18 @@ class SensorDatabaseRepository(
         )
 
     @decorators.read_all
-    async def list_all(self, organization_id: int | None, page: int, page_size: int) -> list[Sensor]:
+    async def list_all(
+        self, organization_id: int | None, page: int, page_size: int
+    ) -> list[Sensor]:
         stmt = select(SensorModel)
         if organization_id is not None:
             stmt = stmt.where(SensorModel.organization_id == organization_id)
         return stmt
 
     @decorators.read_all
-    async def list_by_building(self, building_id: UUID, page: int, page_size: int) -> list[Sensor]:
+    async def list_by_building(
+        self, building_id: UUID, page: int, page_size: int
+    ) -> list[Sensor]:
         return select(SensorModel).where(SensorModel.building_id == building_id)
 
     @decorators.read

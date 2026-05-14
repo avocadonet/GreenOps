@@ -123,9 +123,7 @@ class ThresholdReadDatabaseRepository(
     @decorators.read(raise_if_missing=False)
     async def read_by_sensor(self, sensor_id: UUID) -> ThresholdModel | None:
         return (
-            select(ThresholdModel)
-            .where(ThresholdModel.sensor_id == sensor_id)
-            .limit(1)
+            select(ThresholdModel).where(ThresholdModel.sensor_id == sensor_id).limit(1)
         )
 
 

@@ -32,7 +32,9 @@ from . import mappers
 )
 class OrganizationDatabaseRepository(
     OrganizationRepository,
-    ErrorHandlingSqlAlchemyRepository[CreateOrganizationDTO, Organization, OrganizationModel],
+    ErrorHandlingSqlAlchemyRepository[
+        CreateOrganizationDTO, Organization, OrganizationModel
+    ],
 ):
     def __init__(self, session: AsyncSession) -> None:
         self.gateway = AsyncSqlAlchemyGateway(

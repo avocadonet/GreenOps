@@ -55,14 +55,16 @@ async def nats_publisher(
             if msg is None:
                 break
             try:
-                data = json.dumps({
-                    "sensor_id":        msg.sensor_id,
-                    "value":            msg.value,
-                    "measurement_unit": msg.measurement_unit,
-                    "voltage":          msg.voltage,
-                    "current":          msg.current,
-                    "recorded_at":      msg.recorded_at,
-                }).encode()
+                data = json.dumps(
+                    {
+                        "sensor_id": msg.sensor_id,
+                        "value": msg.value,
+                        "measurement_unit": msg.measurement_unit,
+                        "voltage": msg.voltage,
+                        "current": msg.current,
+                        "recorded_at": msg.recorded_at,
+                    }
+                ).encode()
                 await js.publish(NATS_SUBJECT, data)
                 logger.debug("→ NATS  sensor=%s  %.4f kWh", msg.sensor_id, msg.value)
             except Exception as exc:
@@ -82,11 +84,11 @@ async def run_adapter(
 
 async def main() -> None:
     database_url = os.environ["DATABASE_URL"]
-    nats_url     = os.environ["NATS_URL"]
-    client_id         = os.environ["TUYA_CLIENT_ID"]
-    client_secret     = os.environ["TUYA_CLIENT_SECRET"]
-    base_url          = os.getenv("TUYA_BASE_URL", "https://openapi.tuyaeu.com")
-    poll_interval     = int(os.getenv("TUYA_POLL_INTERVAL", "60"))
+    nats_url = os.environ["NATS_URL"]
+    client_id = os.environ["TUYA_CLIENT_ID"]
+    client_secret = os.environ["TUYA_CLIENT_SECRET"]
+    base_url = os.getenv("TUYA_BASE_URL", "https://openapi.tuyaeu.com")
+    poll_interval = int(os.getenv("TUYA_POLL_INTERVAL", "60"))
 
     engine = create_async_engine(database_url)
     session_factory = async_sessionmaker(bind=engine, expire_on_commit=False)
@@ -97,17 +99,19 @@ async def main() -> None:
     await engine.dispose()
 
     if not mappings:
-        logger.warning("No Tuya sensors found in the database (provider='tuya') — exiting")
+        logger.warning(
+            "No Tuya sensors found in the database (provider='tuya') — exiting"
+        )
         return
 
     logger.info("Loaded %d Tuya sensor mapping(s) from database", len(mappings))
 
-    client  = TuyaClient(client_id, client_secret, base_url)
+    client = TuyaClient(client_id, client_secret, base_url)
     adapter = TuyaAdapter(mappings, client, poll_interval)
 
     queue: asyncio.Queue[TelemetryMessage | None] = asyncio.Queue(maxsize=1000)
 
-    adapter_task   = asyncio.create_task(run_adapter(adapter, queue), name="tuya")
+    adapter_task = asyncio.create_task(run_adapter(adapter, queue), name="tuya")
     publisher_task = asyncio.create_task(
         nats_publisher(queue, nats_url), name="nats-publisher"
     )

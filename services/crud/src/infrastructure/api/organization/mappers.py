@@ -1,10 +1,16 @@
 from shared.dtos.organization import CreateOrganizationDTO, UpdateOrganizationDTO
 from shared.entities.organization import Organization
 
-from .schemas import CreateOrganizationRequest, OrganizationResponse, UpdateOrganizationRequest
+from .schemas import (
+    CreateOrganizationRequest,
+    OrganizationResponse,
+    UpdateOrganizationRequest,
+)
 
 
-def create_request_to_dto(request: CreateOrganizationRequest, owner_id: int) -> CreateOrganizationDTO:
+def create_request_to_dto(
+    request: CreateOrganizationRequest, owner_id: int
+) -> CreateOrganizationDTO:
     return CreateOrganizationDTO(
         name=request.name,
         owner_id=owner_id,
@@ -13,7 +19,9 @@ def create_request_to_dto(request: CreateOrganizationRequest, owner_id: int) -> 
     )
 
 
-def update_request_to_dto(request: UpdateOrganizationRequest, org_id: int) -> UpdateOrganizationDTO:
+def update_request_to_dto(
+    request: UpdateOrganizationRequest, org_id: int
+) -> UpdateOrganizationDTO:
     return UpdateOrganizationDTO(
         id=org_id,
         name=request.name,

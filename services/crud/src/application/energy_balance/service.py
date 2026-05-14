@@ -40,9 +40,13 @@ class EnergyBalanceService:
     def _check(self, user: User, *perms: PermissionsEnum) -> None:
         PermissionBuilder().providers(UserPermissionProvider(user)).add(*perms).apply()
 
-    async def _check_org(self, user: User, organization_id: int, *perms: PermissionsEnum) -> None:
+    async def _check_org(
+        self, user: User, organization_id: int, *perms: PermissionsEnum
+    ) -> None:
         org_role = await self._role_getter(user, organization_id)
-        PermissionBuilder().providers(OrgPermissionProvider(org_role)).add(*perms).apply()
+        PermissionBuilder().providers(OrgPermissionProvider(org_role)).add(
+            *perms
+        ).apply()
 
     async def list_by_building(
         self,
@@ -53,7 +57,9 @@ class EnergyBalanceService:
     ) -> list[EnergyBalance]:
         building = await self._buildings.read(building_id)
         if building.organization_id is not None:
-            await self._check_org(user, building.organization_id, PermissionsEnum.CAN_READ_ENERGY_BALANCE)
+            await self._check_org(
+                user, building.organization_id, PermissionsEnum.CAN_READ_ENERGY_BALANCE
+            )
         else:
             self._check(user, PermissionsEnum.CAN_READ_ENERGY_BALANCE)
         return await self._balances.list_by_building(building_id, date_from, date_to)

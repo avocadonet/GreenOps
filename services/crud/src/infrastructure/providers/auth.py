@@ -13,12 +13,8 @@ from infrastructure.db.users.repository import UsersDatabaseRepository
 class AuthProvider(Provider):
     scope = Scope.REQUEST
 
-    users_repository = provide(
-        source=UsersDatabaseRepository, provides=UsersRepository
-    )
-    security_gateway = provide(
-        source=BcryptSecurityGateway, provides=SecurityGateway
-    )
+    users_repository = provide(source=UsersDatabaseRepository, provides=UsersRepository)
+    security_gateway = provide(source=BcryptSecurityGateway, provides=SecurityGateway)
     auth_service = provide(AuthService)
 
     @provide(scope=Scope.APP)

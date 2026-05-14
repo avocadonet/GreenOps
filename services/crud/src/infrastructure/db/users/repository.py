@@ -13,6 +13,7 @@ from shared.db.user import UserModel
 
 def _model_to_entity(m: UserModel) -> User:
     from domain.users.enums import RoleEnum
+
     return User(
         id=m.id,
         email=m.email,
@@ -108,13 +109,12 @@ class UsersDatabaseRepository(UsersRepository):
 
     async def change_user_active_status(self, user_id: int, status: bool) -> None:
         await self._session.execute(
-            update(UserModel)
-            .where(UserModel.id == user_id)
-            .values(is_active=status)
+            update(UserModel).where(UserModel.id == user_id).values(is_active=status)
         )
 
     async def get_super_user(self) -> User:
         from domain.users.enums import RoleEnum
+
         result = await self._session.execute(
             select(UserModel).where(UserModel.is_active == True).limit(1)
         )

@@ -26,20 +26,32 @@ class BuildingService:
     def _check(self, user: User, *perms: PermissionsEnum) -> None:
         PermissionBuilder().providers(UserPermissionProvider(user)).add(*perms).apply()
 
-    async def _check_org(self, user: User, organization_id: int, *perms: PermissionsEnum) -> None:
+    async def _check_org(
+        self, user: User, organization_id: int, *perms: PermissionsEnum
+    ) -> None:
         org_role = await self._role_getter(user, organization_id)
-        PermissionBuilder().providers(OrgPermissionProvider(org_role)).add(*perms).apply()
+        PermissionBuilder().providers(OrgPermissionProvider(org_role)).add(
+            *perms
+        ).apply()
 
-    async def list_all(self, user: User, organization_id: int | None, page: int, page_size: int) -> list[Building]:
+    async def list_all(
+        self, user: User, organization_id: int | None, page: int, page_size: int
+    ) -> list[Building]:
         if organization_id is not None:
-            await self._check_org(user, organization_id, PermissionsEnum.CAN_READ_BUILDING)
+            await self._check_org(
+                user, organization_id, PermissionsEnum.CAN_READ_BUILDING
+            )
             return await self._repository.list_all(organization_id, page, page_size)
 
         all_roles = await self._role_getter.all_roles(user)
-        builder = PermissionBuilder().providers(
-            UserPermissionProvider(user),
-            *[OrgPermissionProvider(r) for r in all_roles],
-        ).add(PermissionsEnum.CAN_READ_BUILDING)
+        builder = (
+            PermissionBuilder()
+            .providers(
+                UserPermissionProvider(user),
+                *[OrgPermissionProvider(r) for r in all_roles],
+            )
+            .add(PermissionsEnum.CAN_READ_BUILDING)
+        )
         builder.apply()
         scope = builder.scope_for(PermissionsEnum.CAN_READ_BUILDING)
 
@@ -50,7 +62,9 @@ class BuildingService:
 
     async def create(self, user: User, dto: CreateBuildingDTO) -> Building:
         if dto.organization_id is not None:
-            await self._check_org(user, dto.organization_id, PermissionsEnum.CAN_CREATE_BUILDING)
+            await self._check_org(
+                user, dto.organization_id, PermissionsEnum.CAN_CREATE_BUILDING
+            )
         else:
             self._check(user, PermissionsEnum.CAN_CREATE_BUILDING)
         return await self._repository.create(dto)
@@ -58,7 +72,9 @@ class BuildingService:
     async def read(self, user: User, building_id: UUID) -> Building:
         building = await self._repository.read(building_id)
         if building.organization_id is not None:
-            await self._check_org(user, building.organization_id, PermissionsEnum.CAN_READ_BUILDING)
+            await self._check_org(
+                user, building.organization_id, PermissionsEnum.CAN_READ_BUILDING
+            )
         else:
             self._check(user, PermissionsEnum.CAN_READ_BUILDING)
         return building
@@ -67,7 +83,9 @@ class BuildingService:
         async with self._tx:
             building = await self._repository.read(dto.building_id)
             if building.organization_id is not None:
-                await self._check_org(user, building.organization_id, PermissionsEnum.CAN_UPDATE_BUILDING)
+                await self._check_org(
+                    user, building.organization_id, PermissionsEnum.CAN_UPDATE_BUILDING
+                )
             else:
                 self._check(user, PermissionsEnum.CAN_UPDATE_BUILDING)
             building.address = dto.address
@@ -78,7 +96,9 @@ class BuildingService:
         async with self._tx:
             building = await self._repository.read(building_id)
             if building.organization_id is not None:
-                await self._check_org(user, building.organization_id, PermissionsEnum.CAN_DELETE_BUILDING)
+                await self._check_org(
+                    user, building.organization_id, PermissionsEnum.CAN_DELETE_BUILDING
+                )
             else:
                 self._check(user, PermissionsEnum.CAN_DELETE_BUILDING)
             return await self._repository.delete(building)

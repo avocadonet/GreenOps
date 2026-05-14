@@ -29,18 +29,26 @@ class UserTokenService:
         self._tx = tx
         self._tokens_gateway = tokens_gateway
 
-    async def create_activation_token(self, dto: CreateActivationTokenDto) -> UserActivationToken:
+    async def create_activation_token(
+        self, dto: CreateActivationTokenDto
+    ) -> UserActivationToken:
         return await self._activation_token_repository.create(dto)
 
-    async def validate_activation_token(self, token_uuid: UUID) -> tuple[User, TokenPairDto]:
+    async def validate_activation_token(
+        self, token_uuid: UUID
+    ) -> tuple[User, TokenPairDto]:
         async with self._tx:
             token = await self._activation_token_repository.read(token_uuid)
-            await self._activation_token_repository.change_token_used_statement(token.id)
+            await self._activation_token_repository.change_token_used_statement(
+                token.id
+            )
             await self._users_repository.change_user_active_status(token.user.id, True)
             return token.user, await self._tokens_gateway.create_token_pair(token.user)
 
     async def create_telegram_token(self, bot_name: str, actor: User) -> str:
-        token = await self._telegram_token_repository.create(CreateTelegramTokenDto(actor.id))
+        token = await self._telegram_token_repository.create(
+            CreateTelegramTokenDto(actor.id)
+        )
         return f"t.me/{bot_name}?start={token.id}"
 
     async def get_telegram_token(self, token_id: UUID) -> TelegramToken:

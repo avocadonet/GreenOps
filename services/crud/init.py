@@ -22,7 +22,9 @@ async def create_superuser() -> None:
 
     async with session_maker() as session:
         result = await session.execute(
-            select(UserModel).where(UserModel.role == "SUPER_USER").where(UserModel.email == email)
+            select(UserModel)
+            .where(UserModel.role == "SUPER_USER")
+            .where(UserModel.email == email)
         )
         if result.scalar_one_or_none() is not None:
             print("Superuser already exists, skipping.")

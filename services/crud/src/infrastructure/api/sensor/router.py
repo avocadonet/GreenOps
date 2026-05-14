@@ -79,7 +79,9 @@ async def update_sensor(
     user: User = Depends(get_current_user),
 ):
     return mappers.entity_to_response(
-        await service.update(user, sensor_id, body.serial_number, body.model, body.calibration_date)
+        await service.update(
+            user, sensor_id, body.serial_number, body.model, body.calibration_date
+        )
     )
 
 

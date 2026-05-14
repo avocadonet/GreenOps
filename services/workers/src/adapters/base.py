@@ -53,12 +53,12 @@ class SensorMapping:
 class TelemetryMessage:
     """Wire format published to NATS subject `telemetry.raw` (matches CreateMetricDTO)."""
 
-    sensor_id: str          # UUID as string — JSON serialised
-    value: float            # kWh
-    measurement_unit: str   # always "kWh"
-    voltage: float          # V
-    current: float          # A
-    recorded_at: str        # ISO-8601 UTC
+    sensor_id: str  # UUID as string — JSON serialised
+    value: float  # kWh
+    measurement_unit: str  # always "kWh"
+    voltage: float  # V
+    current: float  # A
+    recorded_at: str  # ISO-8601 UTC
 
     @classmethod
     def build(
@@ -97,15 +97,15 @@ class SensorAdapter(ABC):
     name: str = "base"
 
     def __init__(self, mappings: list[SensorMapping]) -> None:
-        self._mappings: dict[str, SensorMapping] = {
-            m.external_id: m for m in mappings
-        }
+        self._mappings: dict[str, SensorMapping] = {m.external_id: m for m in mappings}
 
     def resolve(self, external_id: str) -> SensorMapping | None:
         """Return the GreenOps mapping for an external device ID, or None if unknown."""
         mapping = self._mappings.get(external_id)
         if mapping is None:
-            logger.warning("[%s] unmapped device: %s — skipping", self.name, external_id)
+            logger.warning(
+                "[%s] unmapped device: %s — skipping", self.name, external_id
+            )
         return mapping
 
     @abstractmethod

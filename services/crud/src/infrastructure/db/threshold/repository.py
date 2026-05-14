@@ -42,7 +42,13 @@ class ThresholdDatabaseRepository(
         )
 
     @decorators.read_all
-    async def list_all(self, sensor_id: UUID | None, organization_id: int | None, page: int, page_size: int) -> list[Threshold]:
+    async def list_all(
+        self,
+        sensor_id: UUID | None,
+        organization_id: int | None,
+        page: int,
+        page_size: int,
+    ) -> list[Threshold]:
         stmt = select(ThresholdModel)
         if sensor_id is not None:
             stmt = stmt.where(ThresholdModel.sensor_id == sensor_id)

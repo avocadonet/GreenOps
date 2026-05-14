@@ -36,8 +36,12 @@ class JwtTokensGateway(TokensGateway):
     async def create_token_pair(self, user: User) -> TokenPairDto:
         """Генерирует пару access и refresh токенов для указанного пользователя."""
 
-        access_token = self.__encode(user.email, self.__config.access_token_expires_time)
-        refresh_token = self.__encode(user.email, self.__config.refresh_token_expires_time)
+        access_token = self.__encode(
+            user.email, self.__config.access_token_expires_time
+        )
+        refresh_token = self.__encode(
+            user.email, self.__config.refresh_token_expires_time
+        )
         return TokenPairDto(
             access_token=access_token,
             refresh_token=refresh_token,

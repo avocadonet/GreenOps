@@ -11,7 +11,7 @@ class ReadMixin[Model](Base[Model]):
     async def select_all(self, page: PageSpec) -> Sequence[Model]:
         stmt = self.with_pagination(select(self._model), page)
         return (await self._session.execute(stmt)).scalars().all()
-    
+
     async def select_by_fields_all(self, **params: [str, Any]) -> Sequence[Model]:
         stmt = select(self._model).filter_by(**params)
         return (await self._session.execute(stmt)).scalars().all()
@@ -25,10 +25,6 @@ class ReadMixin[Model](Base[Model]):
 
     async def select_by_query_first(self, stmt: Select) -> Model:
         return (await self._session.execute(stmt)).scalar_one()
-    
+
     def with_pagination(self, stmt: Select, page: PageSpec) -> Select:
-        return (
-            stmt
-            .offset((page.page - 1) * page.page_size)
-            .limit(page.page_size)
-        )
+        return stmt.offset((page.page - 1) * page.page_size).limit(page.page_size)

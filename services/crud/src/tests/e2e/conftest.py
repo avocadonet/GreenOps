@@ -7,7 +7,9 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://greenops:greenops@localhost:5432/greenops")
+os.environ.setdefault(
+    "DATABASE_URL", "postgresql+asyncpg://greenops:greenops@localhost:5432/greenops"
+)
 os.environ.setdefault("JWT_SECRET_KEY", "test-e2e-secret")
 
 from infrastructure.api.app import create_app  # noqa: E402
@@ -21,7 +23,9 @@ def app():
 
 @pytest_asyncio.fixture(scope="session")
 async def client(app):
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as c:
         yield c
 
 
@@ -37,11 +41,16 @@ async def db():
 async def _register_and_activate(client, db, role: str = "PUBLIC") -> dict:
     email = f"e2e_{uuid.uuid4().hex[:10]}@test.local"
     password = "E2eTest1234!"
-    r = await client.post("/auth/register", json={"email": email, "password": password, "fullname": "E2E User"})
+    r = await client.post(
+        "/auth/register",
+        json={"email": email, "password": password, "fullname": "E2E User"},
+    )
     assert r.status_code == 201, r.text
     user_id = r.json()["user_id"]
     await db.execute(
-        update(UserModel).where(UserModel.id == user_id).values(is_active=True, role=role)
+        update(UserModel)
+        .where(UserModel.id == user_id)
+        .values(is_active=True, role=role)
     )
     await db.commit()
     r = await client.post("/auth/login", json={"email": email, "password": password})
@@ -54,7 +63,9 @@ async def admin(client, db):
     user = await _register_and_activate(client, db, role="ADMIN")
     yield user
     # cascade deletes via user delete are not set up, so just mark inactive
-    await db.execute(update(UserModel).where(UserModel.id == user["user_id"]).values(is_active=False))
+    await db.execute(
+        update(UserModel).where(UserModel.id == user["user_id"]).values(is_active=False)
+    )
     await db.commit()
 
 
@@ -62,7 +73,9 @@ async def admin(client, db):
 async def public_user(client, db):
     user = await _register_and_activate(client, db, role="PUBLIC")
     yield user
-    await db.execute(update(UserModel).where(UserModel.id == user["user_id"]).values(is_active=False))
+    await db.execute(
+        update(UserModel).where(UserModel.id == user["user_id"]).values(is_active=False)
+    )
     await db.commit()
 
 
@@ -72,17 +85,24 @@ def auth(token: str) -> dict:
 
 # ── shared resource fixtures ──────────────────────────────────────────────────
 
+
 @pytest_asyncio.fixture
 async def building(client, admin):
     r = await client.post(
         "/buildings",
-        json={"address": "E2E Ave 1", "building_type": "RESIDENTIAL", "total_area": 200.0},
+        json={
+            "address": "E2E Ave 1",
+            "building_type": "RESIDENTIAL",
+            "total_area": 200.0,
+        },
         headers=auth(admin["token"]),
     )
     assert r.status_code == 201, r.text
     data = r.json()
     yield data
-    await client.delete(f"/buildings/{data['building_id']}", headers=auth(admin["token"]))
+    await client.delete(
+        f"/buildings/{data['building_id']}", headers=auth(admin["token"])
+    )
 
 
 @pytest_asyncio.fixture

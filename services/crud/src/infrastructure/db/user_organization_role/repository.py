@@ -17,7 +17,9 @@ from . import mappers
 
 
 @provide(
-    SqlalchemyConfig[UserOrganizationRole, UserOrganizationRole, UserOrganizationRoleModel](
+    SqlalchemyConfig[
+        UserOrganizationRole, UserOrganizationRole, UserOrganizationRoleModel
+    ](
         create_mapper=mappers.to_model,
         entity_mapper=mappers.to_model,
         model_mapper=mappers.to_entity,
@@ -28,21 +30,29 @@ from . import mappers
 )
 class UserOrganizationRolesDatabaseRepository(
     UserOrganizationRolesRepository,
-    ErrorHandlingSqlAlchemyRepository[UserOrganizationRole, UserOrganizationRole, UserOrganizationRoleModel],
+    ErrorHandlingSqlAlchemyRepository[
+        UserOrganizationRole, UserOrganizationRole, UserOrganizationRoleModel
+    ],
 ):
     def __init__(self, session: AsyncSession) -> None:
         self.gateway = AsyncSqlAlchemyGateway(
-            session, sa_model=UserOrganizationRoleModel, id_attr=("user_id", "organization_id")
+            session,
+            sa_model=UserOrganizationRoleModel,
+            id_attr=("user_id", "organization_id"),
         )
 
     @decorators.create
     async def create(self, role: UserOrganizationRole) -> UserOrganizationRole: ...
 
     @decorators.read
-    async def read(self, user_id: int, organization_id: int) -> UserOrganizationRole: ...
+    async def read(
+        self, user_id: int, organization_id: int
+    ) -> UserOrganizationRole: ...
 
     @decorators.read(raise_if_missing=False)
-    async def read_or_none(self, user_id: int, organization_id: int) -> UserOrganizationRole: ...
+    async def read_or_none(
+        self, user_id: int, organization_id: int
+    ) -> UserOrganizationRole: ...
 
     @decorators.update
     async def update(self, role: UserOrganizationRole) -> UserOrganizationRole: ...
@@ -51,7 +61,9 @@ class UserOrganizationRolesDatabaseRepository(
     async def delete(self, role: UserOrganizationRole) -> UserOrganizationRole: ...
 
     @decorators.read_all
-    async def read_all(self, user_id: int, page: int = 1, page_size: int = 100) -> list[UserOrganizationRole]:
+    async def read_all(
+        self, user_id: int, page: int = 1, page_size: int = 100
+    ) -> list[UserOrganizationRole]:
         return select(UserOrganizationRoleModel).where(
             UserOrganizationRoleModel.user_id == user_id
         )
