@@ -555,7 +555,8 @@ async def clean(conn: asyncpg.Connection) -> None:
         "units",
         "buildings",
         "user_organization_roles",
-        "organizations",  # "users",
+        "organizations",  
+        "users",
     ]
     for t in tables:
         await conn.execute(f"DELETE FROM {t}")
@@ -577,7 +578,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="GreenOps DB seeder")
     parser.add_argument(
         "--database-url",
-        default="postgresql://user:password@127.0.0.1:5432/greenops_db",
+        default="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres:5432/greenops_db",
     )
     parser.add_argument("--days", type=int, default=7, help="Days of metric history")
     parser.add_argument(
