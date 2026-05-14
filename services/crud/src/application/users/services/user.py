@@ -1,11 +1,13 @@
-from fastapi import HTTPException
-
 from domain.users.dtos import ReadAllUsersDto
 from domain.users.entities import User
-from domain.users.enums import RoleEnum, UserNotificationSendToEnum
+from domain.users.enums import UserNotificationSendToEnum
 from domain.users.exceptions import CalendarUUIDNotFoundError, TelegramNotConnectedError
-from domain.users.repositories import UsersRepository, UserOrganizationRolesRepository
+from domain.users.repositories import UsersRepository
+from domain.users.role_getter import RoleGetter
 
+from application.auth.enums import PermissionsEnum
+from application.auth.permissions.builder import PermissionBuilder
+from application.auth.permissions.user_provider import UserPermissionProvider
 from application.transaction import TransactionsGateway
 from application.users.dtos import UpdateUserDto
 
@@ -15,42 +17,22 @@ class UserService:
         self,
         repository: UsersRepository,
         tx: TransactionsGateway,
-        roles_repo: UserOrganizationRolesRepository,
+        role_getter: RoleGetter,
     ):
         self._repository = repository
         self._tx = tx
-        self._roles_repo = roles_repo
+        self._role_getter = role_getter
+
+    def _check(self, user: User, *perms: PermissionsEnum) -> None:
+        PermissionBuilder().providers(UserPermissionProvider(user)).add(*perms).apply()
 
     async def get(self, user_id: int, actor: User = None) -> User:
-        super_roles = {
-            RoleEnum.SUPER_USER, 
-            RoleEnum.SUPER_OWNER, 
-            RoleEnum.SUPER_ADMIN, 
-            RoleEnum.SUPER_REDACTOR
-        }
-
         if actor and user_id != actor.id:
-            if actor.role not in super_roles:
-                raise HTTPException(
-                    status_code=403, 
-                    detail="Нет прав на просмотр чужого профиля"
-                )       
+            self._check(actor, PermissionsEnum.CAN_READ_ROLE)
         return await self._repository.read(user_id)
 
     async def list_all(self, dto: ReadAllUsersDto, actor: User) -> list[User]:
-        super_roles = {
-            RoleEnum.SUPER_USER,
-            RoleEnum.SUPER_OWNER,
-            RoleEnum.SUPER_ADMIN,
-            RoleEnum.SUPER_REDACTOR,
-        }
-
-        if actor.role not in super_roles:
-            raise HTTPException(
-                status_code=403,
-                detail="Доступ к списку всех пользователей запрещен"
-            )
-
+        self._check(actor, PermissionsEnum.CAN_READ_ROLE)
         return await self._repository.read_all(dto)
 
     async def get_by_ids(self, user_ids: list[int]) -> list[User]:
