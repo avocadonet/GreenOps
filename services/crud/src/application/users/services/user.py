@@ -1,10 +1,10 @@
-from uuid import UUID, uuid4
+from fastapi import HTTPException
 
 from domain.users.dtos import ReadAllUsersDto
 from domain.users.entities import User
-from domain.users.enums import UserNotificationSendToEnum
+from domain.users.enums import RoleEnum, UserNotificationSendToEnum
 from domain.users.exceptions import CalendarUUIDNotFoundError, TelegramNotConnectedError
-from domain.users.repositories import UsersRepository
+from domain.users.repositories import UsersRepository, UserOrganizationRolesRepository
 
 from application.transaction import TransactionsGateway
 from application.users.dtos import UpdateUserDto
@@ -15,14 +15,42 @@ class UserService:
         self,
         repository: UsersRepository,
         tx: TransactionsGateway,
+        roles_repo: UserOrganizationRolesRepository,
     ):
         self._repository = repository
         self._tx = tx
+        self._roles_repo = roles_repo
 
-    async def get(self, user_id: int) -> User:
+    async def get(self, user_id: int, actor: User = None) -> User:
+        super_roles = {
+            RoleEnum.SUPER_USER, 
+            RoleEnum.SUPER_OWNER, 
+            RoleEnum.SUPER_ADMIN, 
+            RoleEnum.SUPER_REDACTOR
+        }
+
+        if actor and user_id != actor.id:
+            if actor.role not in super_roles:
+                raise HTTPException(
+                    status_code=403, 
+                    detail="Нет прав на просмотр чужого профиля"
+                )       
         return await self._repository.read(user_id)
 
-    async def list_all(self, dto: ReadAllUsersDto) -> list[User]:
+    async def list_all(self, dto: ReadAllUsersDto, actor: User) -> list[User]:
+        super_roles = {
+            RoleEnum.SUPER_USER,
+            RoleEnum.SUPER_OWNER,
+            RoleEnum.SUPER_ADMIN,
+            RoleEnum.SUPER_REDACTOR,
+        }
+
+        if actor.role not in super_roles:
+            raise HTTPException(
+                status_code=403,
+                detail="Доступ к списку всех пользователей запрещен"
+            )
+
         return await self._repository.read_all(dto)
 
     async def get_by_ids(self, user_ids: list[int]) -> list[User]:

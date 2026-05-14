@@ -19,7 +19,7 @@ class UserAlreadyExistsError(EntityAlreadyExistsException):
 
 class UserAccessDenied(EntityAccessDeniedException):
     def __init__(self):
-        super().__init__()
+        super().__init__(entity_name="User")
 
 
 class UserNotValidated(GreenOpsException):
