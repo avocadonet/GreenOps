@@ -11,7 +11,7 @@ COPY services/crudx /crudx
 # Copy service source (poetry.toml lives here)
 COPY services/crud /app
 
-RUN poetry install --no-root
+RUN poetry lock && poetry install --no-root
 
 # alembic.ini lives in /shared; PYTHONPATH exposes the shared package to env.py
 ENV PYTHONPATH=/app/src:/shared/src

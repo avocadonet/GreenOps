@@ -211,31 +211,35 @@ const rolesError = ref('');
 const rolesLoading = ref(false);
 const roleForm = ref({ organization_id: '', role: '' });
 
-const openRoles = async (u) => {
-  rolesTarget.value = u;
-  rolesError.value = '';
-  roleForm.value = { organization_id: '', role: assignableRoles.value[0] || '' };
-  targetRoles.value = [];
-  showRoles.value = true;
+const loadRoles = async (userId) => {
   try {
-    const { data } = await userRolesApi.list(u.id);
+    const { data } = await userRolesApi.list(userId);
     targetRoles.value = data;
   } catch (e) {
     rolesError.value = e.response?.data?.detail || 'Failed to load roles.';
   }
 };
 
+const openRoles = async (u) => {
+  rolesTarget.value = u;
+  rolesError.value = '';
+  roleForm.value = { organization_id: '', role: assignableRoles.value[0] || '' };
+  targetRoles.value = [];
+  showRoles.value = true;
+  await loadRoles(u.id);
+};
+
 const submitCreateRole = async () => {
   rolesLoading.value = true;
   rolesError.value = '';
   try {
-    const { data } = await userRolesApi.create(rolesTarget.value.id, {
+    await userRolesApi.create(rolesTarget.value.id, {
       user_id: rolesTarget.value.id,
       organization_id: roleForm.value.organization_id,
       role: roleForm.value.role,
     });
-    targetRoles.value.push(data);
     roleForm.value = { organization_id: '', role: assignableRoles.value[0] || '' };
+    await loadRoles(rolesTarget.value.id);
   } catch (e) {
     rolesError.value = e.response?.data?.detail || 'Failed to assign role.';
   } finally {
@@ -259,14 +263,13 @@ const submitEditRole = async () => {
   rolesLoading.value = true;
   rolesError.value = '';
   try {
-    const { data } = await userRolesApi.update(
+    await userRolesApi.update(
       rolesTarget.value.id,
       editRoleTarget.value.organization_id,
       { role: editRoleForm.value.role },
     );
-    const idx = targetRoles.value.findIndex(r => r.organization_id === data.organization_id);
-    if (idx >= 0) targetRoles.value[idx] = data;
     showEditRole.value = false;
+    await loadRoles(rolesTarget.value.id);
   } catch (e) {
     rolesError.value = e.response?.data?.detail || 'Failed to update role.';
   } finally {
@@ -288,10 +291,8 @@ const submitDeleteRole = async () => {
   rolesLoading.value = true;
   try {
     await userRolesApi.remove(rolesTarget.value.id, deleteRoleTarget.value.organization_id);
-    targetRoles.value = targetRoles.value.filter(
-      r => r.organization_id !== deleteRoleTarget.value.organization_id,
-    );
     showDeleteRole.value = false;
+    await loadRoles(rolesTarget.value.id);
   } catch (e) {
     rolesError.value = e.response?.data?.detail || 'Failed to remove role.';
     showDeleteRole.value = false;

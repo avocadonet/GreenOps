@@ -17,7 +17,7 @@ class RoleGetter:
         current = UserOrganizationRole(
             organization_id=organization_id,
             user_id=user.id,
-            role=RoleEnum.PUBLIC,
+            role=user.role,
         )
         for role in roles:
             if (

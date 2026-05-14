@@ -40,7 +40,11 @@ class UserRoleService:
                 UserRolesPermissionProvider(role.organization_id, actor_role)
             ).add(PermissionsEnum.CAN_CREATE_ROLE).apply()
             if self._can_manage(role, actor_role):
-                return await self._repository.create(role)
+                async with self._tx:
+                    role_or_none = await self._repository.read_or_none(role.user_id, role.organization_id)
+                    if role_or_none is not None:
+                        return await self.update(role, actor)
+                    return await self._repository.create(role)
             raise UserAccessDenied
 
     async def update(self, entity: UserOrganizationRole, actor: User) -> UserOrganizationRole:
