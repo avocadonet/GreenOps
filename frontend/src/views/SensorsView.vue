@@ -29,6 +29,7 @@
             <th class="text-left px-6 py-3 font-semibold text-slate-500">Type</th>
             <th class="text-left px-6 py-3 font-semibold text-slate-500">Calibration</th>
             <th class="text-left px-6 py-3 font-semibold text-slate-500">Attached To</th>
+            <th class="text-left px-6 py-3 font-semibold text-slate-500">Device</th>
             <th class="px-6 py-3"></th>
           </tr>
         </thead>
@@ -53,13 +54,20 @@
               <span v-else class="text-slate-300">—</span>
             </td>
             <td class="px-6 py-4">
+              <span v-if="s.provider && s.external_id" class="inline-flex items-center gap-1.5">
+                <span class="px-2 py-0.5 rounded-full text-xs font-bold uppercase bg-orange-50 text-orange-600">{{ s.provider }}</span>
+                <span class="font-mono text-xs text-slate-500" :title="s.external_id">{{ s.external_id }}</span>
+              </span>
+              <span v-else class="text-slate-300">—</span>
+            </td>
+            <td class="px-6 py-4">
               <button @click="confirmDelete(s)" class="icon-btn text-slate-400 hover:text-red-500">
                 <Trash2 :size="15" />
               </button>
             </td>
           </tr>
           <tr v-if="!items.length">
-            <td colspan="6" class="px-6 py-12 text-center text-slate-400">No sensors yet. Create one above.</td>
+            <td colspan="7" class="px-6 py-12 text-center text-slate-400">No sensors yet. Create one above.</td>
           </tr>
         </tbody>
       </table>
@@ -107,6 +115,22 @@
             </option>
           </select>
         </div>
+
+        <div class="border-t border-slate-100 pt-4">
+          <label class="form-label">Device Integration <span class="font-normal text-slate-400">(optional)</span></label>
+          <select v-model="form.provider" class="form-input mb-2" @change="form.external_id = ''">
+            <option value="">None</option>
+            <option value="tuya">Tuya</option>
+          </select>
+          <input
+            v-if="form.provider"
+            v-model="form.external_id"
+            class="form-input font-mono"
+            placeholder="Device ID on the platform"
+            :required="!!form.provider"
+          />
+        </div>
+
         <div v-if="formError" class="text-sm text-red-600">{{ formError }}</div>
         <div class="flex gap-3 justify-end pt-2">
           <button type="button" @click="showCreate = false" class="btn-secondary">Cancel</button>
@@ -160,14 +184,18 @@ const attachOpts = [
   { value: 'none', label: 'None' },
 ];
 
-const form = ref({
+const emptyForm = () => ({
   serial_number: '',
   model: '',
   calibration_date: '',
   sensor_type: 'COMMON',
   building_id: null,
   unit_id: null,
+  provider: '',
+  external_id: '',
 });
+
+const form = ref(emptyForm());
 
 const lookup = async () => {
   if (!lookupId.value.trim()) return;
@@ -182,7 +210,7 @@ const lookup = async () => {
 };
 
 const openCreate = () => {
-  form.value = { serial_number: '', model: '', calibration_date: '', sensor_type: 'COMMON', building_id: null, unit_id: null };
+  form.value = emptyForm();
   attachTo.value = 'none';
   formError.value = '';
   showCreate.value = true;
@@ -198,6 +226,8 @@ const submitCreate = async () => {
     sensor_type: form.value.sensor_type,
     building_id: attachTo.value === 'building' ? form.value.building_id || null : null,
     unit_id: attachTo.value === 'unit' ? form.value.unit_id || null : null,
+    provider: form.value.provider || null,
+    external_id: form.value.provider ? form.value.external_id || null : null,
   };
   try {
     const { data } = await sensorsApi.create(payload);

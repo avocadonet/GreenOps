@@ -14,12 +14,16 @@ class CreateSensorRequest(BaseModel):
     building_id: UUID | None = None
     unit_id: UUID | None = None
     organization_id: int | None = None
+    external_id: str | None = None
+    provider: str | None = None
 
 
 class UpdateSensorRequest(BaseModel):
     serial_number: str
     model: str
     calibration_date: date
+    external_id: str | None = None
+    provider: str | None = None
 
 
 class SensorResponse(BaseModel):
@@ -31,3 +35,5 @@ class SensorResponse(BaseModel):
     building_id: UUID | None
     unit_id: UUID | None
     organization_id: int | None = None
+    external_id: str | None = None
+    provider: str | None = None

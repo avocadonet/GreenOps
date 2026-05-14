@@ -15,3 +15,5 @@ class Sensor:
     building_id: UUID | None  # set when sensor_type == COMMON
     unit_id: UUID | None  # set when sensor_type == INDIVIDUAL
     organization_id: int | None = None
+    external_id: str | None = None
+    provider: str | None = None

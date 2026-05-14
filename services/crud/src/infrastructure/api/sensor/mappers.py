@@ -13,6 +13,8 @@ def create_request_to_dto(request: CreateSensorRequest) -> CreateSensorDTO:
         building_id=request.building_id,
         unit_id=request.unit_id,
         organization_id=request.organization_id,
+        external_id=request.external_id,
+        provider=request.provider,
     )
 
 
@@ -26,4 +28,6 @@ def entity_to_response(entity: Sensor) -> SensorResponse:
         building_id=entity.building_id,
         unit_id=entity.unit_id,
         organization_id=entity.organization_id,
+        external_id=entity.external_id,
+        provider=entity.provider,
     )

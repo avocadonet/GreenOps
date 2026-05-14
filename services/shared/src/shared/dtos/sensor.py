@@ -14,3 +14,5 @@ class CreateSensorDTO:
     building_id: UUID | None
     unit_id: UUID | None
     organization_id: int | None = None
+    external_id: str | None = None
+    provider: str | None = None

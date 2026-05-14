@@ -1,45 +1,30 @@
 """
-Adapter runner — entry point for the adapter layer.
+Adapter runner — loads Tuya sensor mappings from PostgreSQL and streams
+telemetry to the Kafka topic `telemetry.raw`.
 
-Starts all enabled adapters concurrently, collects TelemetryMessage objects
-from each, and publishes them to the Kafka topic `telemetry.raw`.
-
-Architecture
-------------
-  [ TuyaAdapter ]      ─╮
-  [     ...     ]      ─┼──► asyncio.Queue ──► KafkaPublisher ──► Kafka
-  [     ...     ]      ─╯
-
-Each adapter runs in its own asyncio Task so a failure in one does not
-affect the others.  The Kafka publisher runs in a dedicated Task that drains
-the shared queue.
-
-Usage
------
-  # Start with default config file (adapters/config.yaml)
-  python -m adapters.runner
-
-  # Custom config path
-  python -m adapters.runner --config /etc/greenops/adapters.yaml
+Environment variables
+---------------------
+  DATABASE_URL              asyncpg connection string (shared with workers)
+  KAFKA_BOOTSTRAP_SERVERS   e.g. localhost:9092
+  TUYA_CLIENT_ID            Tuya IoT project Access ID
+  TUYA_CLIENT_SECRET        Tuya IoT project Access Secret
+  TUYA_BASE_URL             Regional endpoint (default: https://openapi.tuyaeu.com)
+  TUYA_POLL_INTERVAL        Seconds between device sweeps (default: 60)
 """
 
 from __future__ import annotations
 
-import argparse
 import asyncio
 import json
 import logging
+import os
 import signal
-from typing import AsyncIterator
 
-from adapters.base import SensorAdapter, SensorMapping, TelemetryMessage
-from adapters.config import (
-    AdaptersConfig,
-    TuyaConfig,
-    XiaomiConfig,
-    Zigbee2MqttConfig,
-    load,
-)
+from adapters.base import TelemetryMessage
+from adapters.loader import load_tuya_mappings
+from adapters.tuya.adapter import TuyaAdapter
+from adapters.tuya.client import TuyaClient
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 logging.basicConfig(
     level=logging.INFO,
@@ -47,41 +32,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+KAFKA_TOPIC = "telemetry.raw"
 
-# ── adapter factory ───────────────────────────────────────────────────────────
-
-def _build_tuya(cfg: TuyaConfig) -> SensorAdapter:
-    from adapters.tuya.adapter import TuyaAdapter
-    from adapters.tuya.client import TuyaClient
-
-    client = TuyaClient(cfg.client_id, cfg.client_secret, cfg.base_url)
-    mappings = [
-        SensorMapping(
-            external_id=d.external_id,
-            sensor_id=d.sensor_id,
-            scale=d.scale,
-        )
-        for d in cfg.devices
-    ]
-    return TuyaAdapter(mappings, client, cfg.poll_interval)
-
-
-def build_adapters(config: AdaptersConfig) -> list[SensorAdapter]:
-    adapters: list[SensorAdapter] = []
-
-    if config.tuya and config.tuya.enabled and config.tuya.devices:
-        adapters.append(_build_tuya(config.tuya))
-        logger.info("Tuya adapter  devices=%d", len(config.tuya.devices))
-
-    return adapters
-
-
-# ── Kafka publisher ───────────────────────────────────────────────────────────
 
 async def kafka_publisher(
     queue: asyncio.Queue[TelemetryMessage | None],
     bootstrap_servers: str,
-    topic: str,
 ) -> None:
     from aiokafka import AIOKafkaProducer  # type: ignore[import]
 
@@ -90,7 +46,7 @@ async def kafka_publisher(
         value_serializer=lambda v: json.dumps(v).encode(),
     )
     await producer.start()
-    logger.info("Kafka producer started  topic=%s", topic)
+    logger.info("Kafka producer started  topic=%s", KAFKA_TOPIC)
 
     try:
         while True:
@@ -98,7 +54,7 @@ async def kafka_publisher(
             if msg is None:
                 break
             try:
-                await producer.send(topic, {
+                await producer.send(KAFKA_TOPIC, {
                     "sensor_id":        msg.sensor_id,
                     "value":            msg.value,
                     "measurement_unit": msg.measurement_unit,
@@ -113,10 +69,8 @@ async def kafka_publisher(
         await producer.stop()
 
 
-# ── adapter runner ────────────────────────────────────────────────────────────
-
 async def run_adapter(
-    adapter: SensorAdapter,
+    adapter: TuyaAdapter,
     queue: asyncio.Queue[TelemetryMessage | None],
 ) -> None:
     async with adapter:
@@ -124,25 +78,36 @@ async def run_adapter(
             await queue.put(msg)
 
 
-# ── main ──────────────────────────────────────────────────────────────────────
+async def main() -> None:
+    database_url      = os.environ["DATABASE_URL"]
+    bootstrap_servers = os.environ["KAFKA_BOOTSTRAP_SERVERS"]
+    client_id         = os.environ["TUYA_CLIENT_ID"]
+    client_secret     = os.environ["TUYA_CLIENT_SECRET"]
+    base_url          = os.getenv("TUYA_BASE_URL", "https://openapi.tuyaeu.com")
+    poll_interval     = int(os.getenv("TUYA_POLL_INTERVAL", "60"))
 
-async def main(config_path: str) -> None:
-    config   = load(config_path)
-    adapters = build_adapters(config)
+    engine = create_async_engine(database_url)
+    session_factory = async_sessionmaker(bind=engine, expire_on_commit=False)
 
-    if not adapters:
-        logger.warning("No adapters enabled — check adapters/config.yaml")
+    async with session_factory() as session:
+        mappings = await load_tuya_mappings(session)
+
+    await engine.dispose()
+
+    if not mappings:
+        logger.warning("No Tuya sensors found in the database (provider='tuya') — exiting")
         return
+
+    logger.info("Loaded %d Tuya sensor mapping(s) from database", len(mappings))
+
+    client  = TuyaClient(client_id, client_secret, base_url)
+    adapter = TuyaAdapter(mappings, client, poll_interval)
 
     queue: asyncio.Queue[TelemetryMessage | None] = asyncio.Queue(maxsize=1000)
 
-    tasks = [
-        asyncio.create_task(run_adapter(a, queue), name=a.name)
-        for a in adapters
-    ]
+    adapter_task   = asyncio.create_task(run_adapter(adapter, queue), name="tuya")
     publisher_task = asyncio.create_task(
-        kafka_publisher(queue, config.kafka.bootstrap_servers, config.kafka.topic),
-        name="kafka-publisher",
+        kafka_publisher(queue, bootstrap_servers), name="kafka-publisher"
     )
 
     stop = asyncio.Event()
@@ -157,21 +122,14 @@ async def main(config_path: str) -> None:
 
     await stop.wait()
 
-    logger.info("Stopping adapters …")
-    for t in tasks:
-        t.cancel()
-    await asyncio.gather(*tasks, return_exceptions=True)
+    logger.info("Stopping adapter …")
+    adapter_task.cancel()
+    await asyncio.gather(adapter_task, return_exceptions=True)
 
-    await queue.put(None)  # poison pill for the publisher
+    await queue.put(None)
     await publisher_task
     logger.info("Adapter runner stopped.")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="GreenOps adapter runner")
-    parser.add_argument(
-        "--config", default="adapters/config.yaml",
-        help="Path to adapter config YAML (default: adapters/config.yaml)",
-    )
-    args = parser.parse_args()
-    asyncio.run(main(args.config))
+    asyncio.run(main())
