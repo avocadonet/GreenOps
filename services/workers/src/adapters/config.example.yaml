@@ -1,0 +1,24 @@
+kafka:
+  bootstrap_servers: "localhost:9092"   # or kafka:9092 inside Docker
+  topic: "telemetry.raw"
+
+# ─── Tuya Cloud ──────────────────────────────────────────────────────────────
+# Obtain credentials at https://iot.tuya.com → Cloud → Development → Create Project
+# Link physical devices via "Devices" → "Link Tuya App Account"
+tuya:
+  enabled: true
+  client_id:     "PASTE_YOUR_ACCESS_ID_HERE"
+  client_secret: "PASTE_YOUR_ACCESS_SECRET_HERE"
+  base_url:      "https://openapi.tuyaeu.com"   # EU region; change for other regions
+  poll_interval: 60   # seconds between full device sweeps
+
+  devices:
+    # Building-level common meter (COMMON sensor in GreenOps)
+    - external_id: "bfxxxxxxxxxxxxxxxx"    # Tuya device_id (see IoT platform → Devices)
+      sensor_id:   "00000000-0000-0000-0000-000000000001"   # GreenOps sensor UUID
+      scale: 1.0   # raw value is already in kWh
+
+    # Apartment 101 individual meter (INDIVIDUAL sensor)
+    - external_id: "bfyyyyyyyyyyyyyy"
+      sensor_id:   "00000000-0000-0000-0000-000000000002"
+      scale: 1.0

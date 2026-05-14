@@ -6,12 +6,24 @@
         GreenOps <span class="text-emerald-600">SmartCity</span>
       </h1>
     </div>
-    <div class="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-      <span class="relative flex h-2 w-2">
-        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-      </span>
-      <span class="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">Live System</span>
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <span class="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">Live System</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-slate-600">{{ user?.email }}</span>
+        <button @click="logout" class="btn-secondary text-xs">Sign Out</button>
+      </div>
     </div>
   </header>
 </template>
+
+<script setup>
+import { useAuth } from '../composables/useAuth.js';
+
+const { user, logout } = useAuth();
+</script>

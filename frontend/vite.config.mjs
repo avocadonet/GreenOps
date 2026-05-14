@@ -9,6 +9,12 @@ export default defineConfig({
     strictPort: true,
     watch: {
       usePolling: true,
-    }
+    },
+    proxy: {
+      '/api': {
+        target: 'http://crud:8000',
+        changeOrigin: true,
+      },
+    },
   }
 })
