@@ -16,4 +16,4 @@ RUN poetry install --no-root
 # alembic.ini lives in /shared; PYTHONPATH exposes the shared package to env.py
 ENV PYTHONPATH=/app/src:/shared/src
 
-CMD ["poetry", "run", "alembic", "--config", "/shared/alembic.ini", "upgrade", "head"]
+CMD ["sh", "-c", "poetry run alembic --config /shared/alembic.ini upgrade head && poetry run python init.py"]
