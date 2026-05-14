@@ -1,0 +1,134 @@
+name: CI/CD — Build & Deploy
+
+# Запускается при пуше или мердже в ветку master/main
+on:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  # ============================================================================
+  # JOB 1: Собираем 4 Docker-образа и пушим их в GitHub Container Registry
+  # Все 4 билда запускаются ПАРАЛЛЕЛЬНО (экономит время)
+  # ============================================================================
+  build-and-push:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+
+    # Разрешаем этому джобу писать пакеты в GHCR
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        include:
+          - service: crud
+            context: .
+            dockerfile: services/crud/Dockerfile
+          - service: workers
+            context: .
+            dockerfile: services/workers/Dockerfile
+          - service: migrations
+            context: .
+            dockerfile: services/crud/migrations.dockerfile
+          - service: frontend
+            context: ./frontend
+            dockerfile: frontend/Dockerfile
+
+    steps:
+      # Скачиваем код репозитория
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Включаем BuildKit — продвинутый движок сборки Docker с кешированием
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Логинимся в GitHub Container Registry
+      # GITHUB_TOKEN — это автоматический токен, создаётся GitHub Actions само
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Собираем образ и пушим его
+      # Теги:
+      #   :latest — для удобного деплоя
+      #   :abc123 (sha коммита) — для возможности отката
+      - name: Build and push ${{ matrix.service }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/greenops-${{ matrix.service }}:latest
+            ghcr.io/${{ github.repository_owner }}/greenops-${{ matrix.service }}:${{ github.sha }}
+          # Кеш слоёв — ускоряет повторные сборки
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  # ============================================================================
+  # JOB 2: Деплоим на сервер (запускается ПОСЛЕ успешной сборки всех 4 образов)
+  # ============================================================================
+  deploy:
+    name: Deploy to Yandex Cloud
+    runs-on: ubuntu-latest
+    needs: build-and-push  # Ждём завершения build-and-push
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Создаём нужные папки на сервере (если их нет)
+      - name: Prepare server directories
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            mkdir -p ~/greenops/nginx
+            mkdir -p ~/greenops/monitoring
+
+      # Копируем конфиги и docker-compose.prod.yml на сервер через SCP
+      # Структура сохраняется: nginx/nginx.conf → ~/greenops/nginx/nginx.conf
+      - name: Copy config files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "nginx/nginx.conf,monitoring/prometheus.yml,docker-compose.prod.yml"
+          target: "~/greenops/"
+
+      # Подключаемся по SSH и запускаем деплой
+      - name: Pull images and restart services
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e  # Остановить выполнение при любой ошибке
+            cd ~/greenops
+
+            # Логинимся в GHCR на сервере, чтобы скачать приватные образы
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Скачиваем новые версии всех образов
+            docker compose -f docker-compose.prod.yml pull
+
+            # Пересоздаём все контейнеры с новыми образами
+            # --force-recreate: гарантирует что migrations всегда запустится заново
+            # --remove-orphans: удаляет контейнеры, которых больше нет в compose файле
+            docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
+
+            # Удаляем старые образы, чтобы не засорять диск
+            docker image prune -f
+
+            echo "✅ Деплой завершён успешно!"
