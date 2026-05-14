@@ -17,12 +17,15 @@ class PermissionBuilder:
 
         self.permissions = set()
         self.necessary = set()
+        self._providers: list[tuple[PermissionProvider, set[PermissionsEnum]]] = []
 
     def providers(self, *providers: PermissionProvider) -> "PermissionBuilder":
         """Добавляет разрешения из переданных провайдеров."""
 
         for provider in providers:
-            self.permissions |= provider()
+            perms = provider()
+            self._providers.append((provider, perms))
+            self.permissions |= perms
         return self
 
     def add(self, *args: PermissionsEnum) -> "PermissionBuilder":
@@ -37,5 +40,21 @@ class PermissionBuilder:
 
         Вызывает исключение `EntityAccessDenied`, если проверка не пройдена.
         """
-        if not self.necessary <= self.permissions:
-            raise EntityAccessDenied()
+        missing = self.necessary - self.permissions
+        if missing:
+            missing_str = ", ".join(p.value for p in missing)
+            granted_str = ", ".join(p.value for p in self.permissions) or "none"
+            raise EntityAccessDenied(
+                f"missing=[{missing_str}], granted=[{granted_str}]"
+            )
+
+    def scope_for(self, perm: PermissionsEnum) -> set[int] | None:
+        """Returns org IDs accessible for the given permission, None = unrestricted."""
+        scope: set[int] = set()
+        for provider, perms in self._providers:
+            if perm in perms:
+                provider_scope = provider.org_scope()
+                if provider_scope is None:
+                    return None
+                scope |= provider_scope
+        return scope

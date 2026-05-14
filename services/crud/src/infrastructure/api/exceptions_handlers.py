@@ -11,7 +11,7 @@ from shared.exceptions import EntityNotFoundException
 def register_handlers(app: FastAPI) -> None:
     @app.exception_handler(EntityAccessDenied)
     async def access_denied_handler(request: Request, exc: EntityAccessDenied):
-        return JSONResponse(status_code=403, content={"detail": "Forbidden"})
+        return JSONResponse(status_code=403, content={"detail": f"Forbidden {exc}"})
 
     @app.exception_handler(EntityNotFoundException)
     async def not_found_handler(request: Request, exc: EntityNotFoundException):

@@ -33,9 +33,20 @@ class ThresholdService:
     async def list_all(self, user: User, sensor_id: UUID | None, organization_id: int | None, page: int, page_size: int) -> list[Threshold]:
         if organization_id is not None:
             await self._check_org(user, organization_id, PermissionsEnum.CAN_READ_THRESHOLD)
-        else:
-            self._check(user, PermissionsEnum.CAN_READ_THRESHOLD)
-        return await self._repository.list_all(sensor_id, organization_id, page, page_size)
+            return await self._repository.list_all(sensor_id, organization_id, page, page_size)
+
+        all_roles = await self._role_getter.all_roles(user)
+        builder = PermissionBuilder().providers(
+            UserPermissionProvider(user),
+            *[OrgPermissionProvider(r) for r in all_roles],
+        ).add(PermissionsEnum.CAN_READ_THRESHOLD)
+        builder.apply()
+        scope = builder.scope_for(PermissionsEnum.CAN_READ_THRESHOLD)
+
+        items = await self._repository.list_all(sensor_id, None, page, page_size)
+        if scope is not None:
+            items = [t for t in items if t.organization_id in scope]
+        return items
 
     async def create(self, user: User, dto: CreateThresholdDTO) -> Threshold:
         if dto.organization_id is not None:

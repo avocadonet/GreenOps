@@ -7,7 +7,13 @@ const orgRoles = ref(JSON.parse(localStorage.getItem('greenops_org_roles') || '[
 export function useAuth() {
   const isAuthenticated = computed(() => !!token.value);
 
+  const clearEntityCache = () => {
+    ['greenops_buildings', 'greenops_organizations', 'greenops_sensors',
+     'greenops_thresholds', 'greenops_units'].forEach(k => localStorage.removeItem(k));
+  };
+
   const setAuth = (data) => {
+    clearEntityCache();
     token.value = data.access_token;
     user.value = { user_id: data.user_id, email: data.email, role: 'PUBLIC' };
     localStorage.setItem('greenops_token', data.access_token);
@@ -28,6 +34,7 @@ export function useAuth() {
     localStorage.removeItem('greenops_token');
     localStorage.removeItem('greenops_user');
     localStorage.removeItem('greenops_org_roles');
+    clearEntityCache();
   };
 
   return { token, user, orgRoles, isAuthenticated, setAuth, setUserProfile, logout };
