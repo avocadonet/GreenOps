@@ -3,12 +3,12 @@ from typing import AsyncIterable
 
 from crudx.sa.transaction import AsyncTransactionsDatabaseGateway
 from dishka import AsyncContainer, Provider, Scope, make_async_container, provide
-from faststream.kafka import KafkaBroker
+from faststream.nats import NatsBroker
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from config import Config, get_config
 from database import get_engine, get_session_maker
-from kafka_publisher import KafkaEventPublisher
+from nats_publisher import NatsEventPublisher
 from repositories import (
     AverageLoadReadDatabaseRepository,
     IncidentDatabaseRepository,
@@ -49,8 +49,8 @@ class AppProvider(Provider):
     spike_detector = provide(SpikeDetector, scope=Scope.APP)
 
     @provide(scope=Scope.APP)
-    def publisher(self, broker: KafkaBroker) -> KafkaEventPublisher:
-        return KafkaEventPublisher(broker)
+    def publisher(self, broker: NatsBroker) -> NatsEventPublisher:
+        return NatsEventPublisher(broker)
 
     metrics = provide(MetricDatabaseRepository, scope=Scope.REQUEST)
     incidents = provide(IncidentDatabaseRepository, scope=Scope.REQUEST)
@@ -61,8 +61,8 @@ class AppProvider(Provider):
     telemetry = provide(TelemetryService, scope=Scope.REQUEST)
 
 
-def create_container(broker: KafkaBroker) -> AsyncContainer:
+def create_container(broker: NatsBroker) -> AsyncContainer:
     return make_async_container(
         AppProvider(),
-        context={KafkaBroker: broker},
+        context={NatsBroker: broker},
     )

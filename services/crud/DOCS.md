@@ -547,7 +547,7 @@ Both jobs are registered with APScheduler at application startup.
 
 Reads the last hour of raw metrics for every sensor and writes a single `AverageLoad` row per sensor with `avg_value`, `min_value`, `max_value`, and `measurement_count`.
 
-Fired at `:05` to avoid the `:00` thundering-herd; gives Kafka consumers time to flush recent metrics.
+Fired at `:05` to avoid the `:00` thundering-herd; gives NATS consumers time to flush recent metrics.
 
 ### Energy Balance — daily at 00:10 UTC
 

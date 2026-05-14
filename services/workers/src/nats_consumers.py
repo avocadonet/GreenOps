@@ -2,18 +2,19 @@ import logging
 
 from adaptix import Retort
 from dishka.integrations.faststream import FromDishka
-from faststream.kafka import KafkaRouter
+from faststream.nats import NatsRouter
+from faststream.nats.schemas import JStream
 
 from shared.dtos.incident import IncidentCreatedEvent
 from shared.dtos.metric import CreateMetricDTO
 from telemetry import TelemetryService
 
 logger = logging.getLogger(__name__)
-router = KafkaRouter()
+router = NatsRouter()
 _retort = Retort()
 
 
-@router.subscriber("telemetry.raw")
+@router.subscriber("telemetry.raw", stream=JStream(name="telemetry"))
 async def on_telemetry_raw(
     message: dict,
     service: FromDishka[TelemetryService],
@@ -23,7 +24,7 @@ async def on_telemetry_raw(
     logger.debug("Processed metric for sensor %s", dto.sensor_id)
 
 
-@router.subscriber("incidents.created")
+@router.subscriber("incidents.created", stream=JStream(name="incidents"))
 async def on_incident_created(message: dict) -> None:
     event = _retort.load(message, IncidentCreatedEvent)
     logger.info(

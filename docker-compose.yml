@@ -16,25 +16,16 @@ services:
       timeout: 5s
       retries: 10
 
-  kafka:
-    image: apache/kafka:latest
-    container_name: greenops_kafka
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+  nats:
+    image: nats:latest
+    container_name: greenops_nats
+    command: ["--jetstream", "--http_port", "8222"]
     ports:
-      - "9092:9092"
+      - "4222:4222"
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
-      interval: 10s
-      timeout: 10s
+      test: ["CMD", "wget", "-qO-", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 5s
       retries: 10
 
   # ── Migrations (runs once, exits 0) ─────────────────────────────────────────
@@ -78,11 +69,11 @@ services:
     container_name: greenops_workers
     environment:
       DATABASE_URL: postgresql+asyncpg://user:password@postgres:5432/greenops_db
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      NATS_URL: nats://nats:4222
     depends_on:
       postgres:
         condition: service_healthy
-      kafka:
+      nats:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully
@@ -146,14 +137,6 @@ services:
       DATA_SOURCE_NAME: "postgresql://user:password@postgres:5432/greenops_db?sslmode=disable"
     depends_on:
       postgres:
-        condition: service_healthy
-
-  kafka-exporter:
-    image: danielqsj/kafka-exporter
-    container_name: greenops_kafka_exporter
-    command: ["--kafka.server=kafka:9092"]
-    depends_on:
-      kafka:
         condition: service_healthy
 
 volumes:

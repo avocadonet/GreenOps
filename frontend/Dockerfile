@@ -1,6 +1,14 @@
-FROM node:20-slim
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+FROM node:20-slim AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
-CMD ["npm", "run", "dev"]
+RUN npm run build
+
+# ── Stage 2: Serve ────────────────────────────────────────────────────────────
+# Собранные статические файлы отдаём через nginx на порту 3000
+FROM nginx:stable-alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 3000
