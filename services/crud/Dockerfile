@@ -22,7 +22,7 @@ COPY services/crud /app
 
 COPY services/crud/pyproject.toml services/crud/poetry.lock* ./
 
-RUN poetry install --no-root
+RUN poetry lock && poetry install --no-root
 
 ENV PYTHONPATH=/app/src
 

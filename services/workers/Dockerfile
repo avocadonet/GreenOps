@@ -21,7 +21,7 @@ COPY services/crudx /crudx
 COPY services/workers/pyproject.toml services/workers/poetry.lock* ./
 COPY services/workers /app
 
-RUN poetry install --no-root
+RUN poetry lock && poetry install --no-root
 
 ENV PYTHONPATH=/app/src
 
