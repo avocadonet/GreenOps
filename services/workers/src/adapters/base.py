@@ -5,7 +5,7 @@ Each adapter is responsible for:
   1. Connecting to an external platform (Tuya Cloud, Mi Home, Zigbee2MQTT, …)
   2. Receiving or polling raw sensor readings in the platform's native format
   3. Normalising them into GreenOps TelemetryMessage objects
-  4. Publishing the messages to the Kafka topic `telemetry.raw`
+  4. Publishing the messages to the NATS subject `telemetry.raw`
 
 Implementing a new adapter
 --------------------------
@@ -26,7 +26,7 @@ from uuid import UUID
 
 logger = logging.getLogger(__name__)
 
-KAFKA_TOPIC = "telemetry.raw"
+NATS_SUBJECT = "telemetry.raw"
 
 
 @dataclass
@@ -51,9 +51,9 @@ class SensorMapping:
 
 @dataclass
 class TelemetryMessage:
-    """Wire format published to Kafka topic `telemetry.raw` (matches CreateMetricDTO)."""
+    """Wire format published to NATS subject `telemetry.raw` (matches CreateMetricDTO)."""
 
-    sensor_id: str          # UUID as string — aiokafka serialises to JSON
+    sensor_id: str          # UUID as string — JSON serialised
     value: float            # kWh
     measurement_unit: str   # always "kWh"
     voltage: float          # V

@@ -1,6 +1,6 @@
 import asyncio
 
-from kafka_app import create_app
+from nats_app import create_app
 
 
 async def main():

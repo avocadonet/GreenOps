@@ -14,7 +14,7 @@ class CreateIncidentDTO:
 
 @dataclass
 class IncidentCreatedEvent:
-    """Published to incidents.created Kafka topic. Consumed by all services."""
+    """Published to incidents.created nuts topic. Consumed by all services."""
 
     incident_id: UUID
     incident_type: IncidentType

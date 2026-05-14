@@ -1,16 +1,16 @@
 # workers — Data Plane Service
 
-FastStream (Kafka) consumer service. Ingests raw telemetry, detects spikes, creates incidents, and publishes events. No REST API.
+FastStream (NATS JetStream) consumer service. Ingests raw telemetry, detects spikes, creates incidents, and publishes events. No REST API.
 
 ## Responsibilities
 
 - Consume `telemetry.raw` → persist `Metric` → run `SpikeDetector` → if spike detected: create `PeakLoad` + `Incident` in one DB transaction, then publish `IncidentCreatedEvent` to `incidents.created`
 - Consume `incidents.created` → log/audit (extensible hook for future integrations)
 
-## Kafka topics
+## NATS subjects
 
-| Topic | Direction | Handler |
-|-------|-----------|---------|
+| Subject | Direction | Handler |
+|---------|-----------|---------|
 | `telemetry.raw` | inbound | `TelemetryService.process()` |
 | `incidents.created` | inbound | audit logger |
 | `incidents.created` | outbound | published by `TelemetryService` on spike |
@@ -35,7 +35,7 @@ Severity is `HIGH` when `value > limit_value * 1.5`, otherwise `LOW`.
 
 | Layer | Technology |
 |-------|-----------|
-| Messaging | FastStream + aiokafka |
+| Messaging | FastStream + nats-py |
 | DI | Dishka (`setup_dishka` for FastStream) |
 | ORM | SQLAlchemy 2.0 |
 | DB driver | asyncpg |
@@ -55,13 +55,13 @@ src/
     ├── db/                    # crudx repositories (metric, incident, peak_load)
     │   ├── threshold/         # Raw SQLAlchemy read (read-only, no crudx needed)
     │   └── average_load/      # Raw SQLAlchemy read
-    ├── kafka/
+    ├── nats/
     │   ├── telemetry_consumer.py
     │   ├── incident_consumer.py
-    │   ├── publisher.py       # KafkaEventPublisher implements EventPublisher protocol
+    │   ├── publisher.py       # NatsEventPublisher implements EventPublisher protocol
     │   └── app.py             # FastStream app factory
     ├── configs/               # Config dataclass
-    └── providers/             # Dishka providers; KafkaBroker injected via context
+    └── providers/             # Dishka providers; NatsBroker injected via context
 ```
 
 The `EventPublisher` is a `Protocol` — `TelemetryService` has no import of FastStream, keeping domain/application layers framework-free.
@@ -71,7 +71,7 @@ The `EventPublisher` is a `Protocol` — `TelemetryService` has no import of Fas
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL async URL |
-| `KAFKA_BOOTSTRAP_SERVERS` | Kafka broker address, e.g. `kafka:9092` |
+| `NATS_URL` | NATS server URL, e.g. `nats://localhost:4222` |
 
 ## Running locally
 
@@ -79,7 +79,7 @@ The `EventPublisher` is a `Protocol` — `TelemetryService` has no import of Fas
 cd services/workers
 poetry install
 DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/greenops_db \
-  KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
+  NATS_URL=nats://localhost:4222 \
   PYTHONPATH=src poetry run python main.py
 ```
 

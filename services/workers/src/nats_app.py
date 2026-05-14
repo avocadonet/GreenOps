@@ -1,15 +1,15 @@
 from dishka.integrations.faststream import setup_dishka
 from faststream import FastStream
-from faststream.kafka import KafkaBroker
+from faststream.nats import NatsBroker
 
 from config import get_config
 from container import create_container
-from kafka_consumers import router
+from nats_consumers import router
 
 
 def create_app() -> FastStream:
     config = get_config()
-    broker = KafkaBroker(config.kafka_bootstrap_servers)
+    broker = NatsBroker(config.nats_url)
     broker.include_router(router)
 
     app = FastStream(broker)

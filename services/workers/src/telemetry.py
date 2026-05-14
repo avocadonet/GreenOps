@@ -6,7 +6,7 @@ from shared.dtos.metric import CreateMetricDTO
 from shared.dtos.peak_load import CreatePeakLoadDTO
 from shared.enums import IncidentSeverity
 
-from kafka_publisher import KafkaEventPublisher
+from nats_publisher import NatsEventPublisher
 from repositories import (
     AverageLoadReadDatabaseRepository,
     IncidentDatabaseRepository,
@@ -28,7 +28,7 @@ class TelemetryService:
         avg_loads: AverageLoadReadDatabaseRepository,
         peak_loads: PeakLoadDatabaseRepository,
         detector: SpikeDetector,
-        publisher: KafkaEventPublisher,
+        publisher: NatsEventPublisher,
         tx: AsyncTransactionsDatabaseGateway,
     ) -> None:
         self._metrics = metrics

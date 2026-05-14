@@ -1,15 +1,15 @@
 """
 Adapter runner — loads Tuya sensor mappings from PostgreSQL and streams
-telemetry to the Kafka topic `telemetry.raw`.
+telemetry to the NATS subject `telemetry.raw`.
 
 Environment variables
 ---------------------
-  DATABASE_URL              asyncpg connection string (shared with workers)
-  KAFKA_BOOTSTRAP_SERVERS   e.g. localhost:9092
-  TUYA_CLIENT_ID            Tuya IoT project Access ID
-  TUYA_CLIENT_SECRET        Tuya IoT project Access Secret
-  TUYA_BASE_URL             Regional endpoint (default: https://openapi.tuyaeu.com)
-  TUYA_POLL_INTERVAL        Seconds between device sweeps (default: 60)
+  DATABASE_URL      asyncpg connection string (shared with workers)
+  NATS_URL          e.g. nats://localhost:4222
+  TUYA_CLIENT_ID    Tuya IoT project Access ID
+  TUYA_CLIENT_SECRET  Tuya IoT project Access Secret
+  TUYA_BASE_URL     Regional endpoint (default: https://openapi.tuyaeu.com)
+  TUYA_POLL_INTERVAL  Seconds between device sweeps (default: 60)
 """
 
 from __future__ import annotations
@@ -32,21 +32,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-KAFKA_TOPIC = "telemetry.raw"
+NATS_SUBJECT = "telemetry.raw"
 
 
-async def kafka_publisher(
+async def nats_publisher(
     queue: asyncio.Queue[TelemetryMessage | None],
-    bootstrap_servers: str,
+    nats_url: str,
 ) -> None:
-    from aiokafka import AIOKafkaProducer  # type: ignore[import]
+    import nats  # type: ignore[import]
 
-    producer = AIOKafkaProducer(
-        bootstrap_servers=bootstrap_servers,
-        value_serializer=lambda v: json.dumps(v).encode(),
-    )
-    await producer.start()
-    logger.info("Kafka producer started  topic=%s", KAFKA_TOPIC)
+    nc = await nats.connect(nats_url)
+    js = nc.jetstream()
+    try:
+        await js.add_stream(name="telemetry", subjects=[NATS_SUBJECT])
+    except Exception:
+        pass  # stream already exists
+    logger.info("NATS producer started  subject=%s", NATS_SUBJECT)
 
     try:
         while True:
@@ -54,19 +55,20 @@ async def kafka_publisher(
             if msg is None:
                 break
             try:
-                await producer.send(KAFKA_TOPIC, {
+                data = json.dumps({
                     "sensor_id":        msg.sensor_id,
                     "value":            msg.value,
                     "measurement_unit": msg.measurement_unit,
                     "voltage":          msg.voltage,
                     "current":          msg.current,
                     "recorded_at":      msg.recorded_at,
-                })
-                logger.debug("→ Kafka  sensor=%s  %.4f kWh", msg.sensor_id, msg.value)
+                }).encode()
+                await js.publish(NATS_SUBJECT, data)
+                logger.debug("→ NATS  sensor=%s  %.4f kWh", msg.sensor_id, msg.value)
             except Exception as exc:
-                logger.error("Kafka send failed: %s", exc)
+                logger.error("NATS publish failed: %s", exc)
     finally:
-        await producer.stop()
+        await nc.drain()
 
 
 async def run_adapter(
@@ -79,8 +81,8 @@ async def run_adapter(
 
 
 async def main() -> None:
-    database_url      = os.environ["DATABASE_URL"]
-    bootstrap_servers = os.environ["KAFKA_BOOTSTRAP_SERVERS"]
+    database_url = os.environ["DATABASE_URL"]
+    nats_url     = os.environ["NATS_URL"]
     client_id         = os.environ["TUYA_CLIENT_ID"]
     client_secret     = os.environ["TUYA_CLIENT_SECRET"]
     base_url          = os.getenv("TUYA_BASE_URL", "https://openapi.tuyaeu.com")
@@ -107,7 +109,7 @@ async def main() -> None:
 
     adapter_task   = asyncio.create_task(run_adapter(adapter, queue), name="tuya")
     publisher_task = asyncio.create_task(
-        kafka_publisher(queue, bootstrap_servers), name="kafka-publisher"
+        nats_publisher(queue, nats_url), name="nats-publisher"
     )
 
     stop = asyncio.Event()
