@@ -38,7 +38,7 @@ services:
 
   # ── Migrations (запускается один раз при деплое) ──────────────────────────
   migrations:
-    image: ghcr.io/alexandrvino/greenops-migrations:latest
+    image: ghcr.io/avocadonet/greenops-migrations:latest
     container_name: greenops_migrations
     environment:
       DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
@@ -51,7 +51,7 @@ services:
 
   # ── CRUD / Control Plane ─────────────────────────────────────────────────────
   crud:
-    image: ghcr.io/alexandrvino/greenops-crud:latest
+    image: ghcr.io/avocadonet/greenops-crud:latest
     container_name: greenops_crud
     environment:
       DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
@@ -65,7 +65,7 @@ services:
 
   # ── Workers / Data Plane ─────────────────────────────────────────────────────
   workers:
-    image: ghcr.io/alexandrvino/greenops-workers:latest
+    image: ghcr.io/avocadonet/greenops-workers:latest
     container_name: greenops_workers
     environment:
       DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
@@ -81,7 +81,7 @@ services:
 
   # ── Frontend ──────────────────────────────────────────────────────────────────
   frontend:
-    image: ghcr.io/alexandrvino/greenops-frontend:latest
+    image: ghcr.io/avocadonet/greenops-frontend:latest
     container_name: greenops_frontend
     depends_on:
       - crud
