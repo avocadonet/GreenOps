@@ -21,39 +21,41 @@ from datetime import date, datetime, timedelta
 
 import asyncpg
 import bcrypt
-
+import secrets
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
+pwd = secrets.token_hex(20)
+print(pwd)
 
 USERS = [
     dict(
         email="super@greenops.io",
         fullname="Super Admin",
-        password=os.environ.get("SUPERUSER_PASSWORD", "SUPERUSER_PASSWORD"),
+        password=os.environ.get("SUPERUSER_PASSWORD", pwd),
         role="SUPER_USER",
     ),
     dict(
         email="admin@ecoresidence.io",
         fullname="EcoRes Admin",
-        password=os.environ.get("SUPERUSER_PASSWORD", "SUPERUSER_PASSWORD"),
+        password=os.environ.get("SUPERUSER_PASSWORD", pwd),
         role="PUBLIC",
     ),
     dict(
         email="admin@industrialops.io",
         fullname="IndustrialOps Admin",
-        password=os.environ.get("SUPERUSER_PASSWORD", "SUPERUSER_PASSWORD"),
+        password=os.environ.get("SUPERUSER_PASSWORD", pwd),
         role="PUBLIC",
     ),
     dict(
         email="redactor@ecoresidence.io",
         fullname="EcoRes Redactor",
-        password=os.environ.get("SUPERUSER_PASSWORD", "SUPERUSER_PASSWORD"),
+        password=os.environ.get("SUPERUSER_PASSWORD", pwd),
         role="PUBLIC",
     ),
     dict(
         email="owner@ecoresidence.io",
         fullname="Unit Owner",
-        password=os.environ.get("SUPERUSER_PASSWORD", "SUPERUSER_PASSWORD"),
+        password=os.environ.get("SUPERUSER_PASSWORD", pwd),
         role="PUBLIC",
     ),
 ]
@@ -555,7 +557,7 @@ async def clean(conn: asyncpg.Connection) -> None:
         "units",
         "buildings",
         "user_organization_roles",
-        "organizations",  
+        "organizations",
         "users",
     ]
     for t in tables:
