@@ -33,7 +33,13 @@ class UserRoleService:
     async def list_all(self, user_id: int) -> list[UserOrganizationRole]:
         return await self._repository.read_all(user_id)
 
+    @staticmethod
+    def _reject_super(role: UserOrganizationRole) -> None:
+        if role.role.value.startswith("SUPER"):
+            raise UserAccessDenied
+
     async def create(self, role: UserOrganizationRole, actor: User) -> UserOrganizationRole:
+        self._reject_super(role)
         async with self._tx:
             actor_role = await self._role_getter(actor, role.organization_id)
             PermissionBuilder().providers(
@@ -48,6 +54,7 @@ class UserRoleService:
             raise UserAccessDenied
 
     async def update(self, entity: UserOrganizationRole, actor: User) -> UserOrganizationRole:
+        self._reject_super(entity)
         async with self._tx:
             actor_role = await self._role_getter(actor, entity.organization_id)
             PermissionBuilder().providers(

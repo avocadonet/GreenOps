@@ -28,14 +28,23 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import { energyBalancesApi } from '../api/index.js';
+import { buildingsApi, energyBalancesApi } from '../api/index.js';
 import { useLocalStore } from '../composables/useLocalStore.js';
 import StatsCards from '../components/StatsCards.vue';
 import UsageChart from '../components/UsageChart.vue';
 
-const { items: buildings } = useLocalStore('greenops_buildings', 'building_id');
+const { items: buildings, setAll: setBuildings } = useLocalStore('greenops_buildings', 'building_id');
 
-const selectedBuilding = ref(buildings.value[0]?.building_id ?? null);
+onMounted(async () => {
+  if (!buildings.value.length) {
+    try {
+      const { data } = await buildingsApi.list({ page_size: 100 });
+      setBuildings(data.items);
+    } catch {}
+  }
+});
+
+const selectedBuilding = ref(null);
 const balances = ref([]);
 
 const latestLoss = computed(() => balances.value[balances.value.length - 1]?.loss_kwh ?? 0);
@@ -64,9 +73,15 @@ const loadBalances = async () => {
   }
 };
 
-onMounted(loadBalances);
-watch(selectedBuilding, () => {
+// Auto-select first building — runs immediately and whenever buildings change (e.g. after Buildings view loads them)
+watch(buildings, (list) => {
+  if (!selectedBuilding.value && list.length) {
+    selectedBuilding.value = list[0].building_id;
+  }
+}, { immediate: true });
+
+watch(selectedBuilding, (id) => {
   balances.value = [];
-  loadBalances();
-});
+  if (id) loadBalances();
+}, { immediate: true });
 </script>

@@ -10,3 +10,8 @@ class OrgPermissionProvider(PermissionProvider):
 
     def __call__(self) -> set[PermissionsEnum]:
         return ROLE_PERMISSIONS.get(self._role.role, set())
+
+    def org_scope(self) -> set[int] | None:
+        if self._role.role.value.startswith("SUPER"):
+            return None
+        return {self._role.organization_id}

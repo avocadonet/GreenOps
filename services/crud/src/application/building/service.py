@@ -33,9 +33,20 @@ class BuildingService:
     async def list_all(self, user: User, organization_id: int | None, page: int, page_size: int) -> list[Building]:
         if organization_id is not None:
             await self._check_org(user, organization_id, PermissionsEnum.CAN_READ_BUILDING)
-        else:
-            self._check(user, PermissionsEnum.CAN_READ_BUILDING)
-        return await self._repository.list_all(organization_id, page, page_size)
+            return await self._repository.list_all(organization_id, page, page_size)
+
+        all_roles = await self._role_getter.all_roles(user)
+        builder = PermissionBuilder().providers(
+            UserPermissionProvider(user),
+            *[OrgPermissionProvider(r) for r in all_roles],
+        ).add(PermissionsEnum.CAN_READ_BUILDING)
+        builder.apply()
+        scope = builder.scope_for(PermissionsEnum.CAN_READ_BUILDING)
+
+        items = await self._repository.list_all(None, page, page_size)
+        if scope is not None:
+            items = [b for b in items if b.organization_id in scope]
+        return items
 
     async def create(self, user: User, dto: CreateBuildingDTO) -> Building:
         if dto.organization_id is not None:

@@ -195,7 +195,7 @@ const myRank = computed(() => {
 });
 
 const assignableRoles = computed(() =>
-  ROLE_ORDER.filter((_, i) => i > myRank.value)
+  ROLE_ORDER.filter((r, i) => i > myRank.value && !r.startsWith('SUPER'))
 );
 
 const canManage = (role) => {

@@ -36,11 +36,25 @@ class SensorService:
     async def list_all(self, user: User, building_id: UUID | None, organization_id: int | None, page: int, page_size: int) -> list[Sensor]:
         if organization_id is not None:
             await self._check_org(user, organization_id, PermissionsEnum.CAN_READ_SENSOR)
-        else:
-            self._check(user, PermissionsEnum.CAN_READ_SENSOR)
+            if building_id is not None:
+                return await self._repository.list_by_building(building_id, page, page_size)
+            return await self._repository.list_all(organization_id, page, page_size)
+
+        all_roles = await self._role_getter.all_roles(user)
+        builder = PermissionBuilder().providers(
+            UserPermissionProvider(user),
+            *[OrgPermissionProvider(r) for r in all_roles],
+        ).add(PermissionsEnum.CAN_READ_SENSOR)
+        builder.apply()
+        scope = builder.scope_for(PermissionsEnum.CAN_READ_SENSOR)
+
         if building_id is not None:
-            return await self._repository.list_by_building(building_id, page, page_size)
-        return await self._repository.list_all(organization_id, page, page_size)
+            items = await self._repository.list_by_building(building_id, page, page_size)
+        else:
+            items = await self._repository.list_all(None, page, page_size)
+        if scope is not None:
+            items = [s for s in items if s.organization_id in scope]
+        return items
 
     async def create(self, user: User, dto: CreateSensorDTO) -> Sensor:
         if dto.organization_id is not None:
