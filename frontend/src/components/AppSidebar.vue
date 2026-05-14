@@ -18,12 +18,16 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { LayoutDashboard, Building2, Home, Cpu, Sliders, Briefcase, Users } from 'lucide-vue-next';
+import { usePermissions } from '../composables/usePermissions.js';
 
 defineProps(['modelValue']);
 defineEmits(['update:modelValue']);
 
-const navItems = [
+const { allowedViews } = usePermissions();
+
+const allNavItems = [
   { view: 'dashboard',     label: 'Dashboard',     icon: LayoutDashboard },
   { view: 'organizations', label: 'Organizations',  icon: Briefcase },
   { view: 'users',         label: 'Users',          icon: Users },
@@ -32,4 +36,6 @@ const navItems = [
   { view: 'sensors',       label: 'Sensors',        icon: Cpu },
   { view: 'thresholds',    label: 'Thresholds',     icon: Sliders },
 ];
+
+const navItems = computed(() => allNavItems.filter(item => allowedViews.value.includes(item.view)));
 </script>
