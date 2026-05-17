@@ -6,7 +6,7 @@ import os
 import random
 from datetime import datetime, timezone
 
-import aiohttp
+import asyncpg
 import nats
 
 # ── metric helpers ────────────────────────────────────────────────────────────
@@ -35,44 +35,6 @@ def _gen_reading(
     voltage = round(random.gauss(220.0, 2.0), 2)
     current = round(value / max(voltage, 1.0), 4)
     return value, voltage, current
-
-# ── api client ────────────────────────────────────────────────────────────────
-
-class ApiClient:
-    def __init__(self, base_url: str):
-        self.base_url = base_url.rstrip("/")
-        self.session = aiohttp.ClientSession()
-        self.token = None
-
-    async def close(self):
-        await self.session.close()
-
-    async def login(self, email: str, password: str):
-        url = f"{self.base_url}/api/v1/auth/login"
-        print(f"Attempting login to {url} with email {email}")
-        async with self.session.post(url, json={"email": email, "password": password}) as resp:
-            if resp.status != 200:
-                text = await resp.text()
-                print(f"Login failed with status {resp.status}: {text}")
-            resp.raise_for_status()
-            data = await resp.json()
-            self.token = data["access_token"]
-            self.session.headers.update({"Authorization": f"Bearer {self.token}"})
-            print("Login successful.")
-
-    async def fetch_all(self, endpoint: str) -> list[dict]:
-        url = f"{self.base_url}{endpoint}"
-        items = []
-        page = 1
-        while True:
-            async with self.session.get(url, params={"page": page, "page_size": 100}) as resp:
-                resp.raise_for_status()
-                data = await resp.json()
-                items.extend(data["items"])
-                if len(data["items"]) < 100:
-                    break
-                page += 1
-        return items
 
 # ── worker ────────────────────────────────────────────────────────────────────
 
@@ -111,41 +73,30 @@ async def worker(
             print(f"[Worker {sensor_id[:8]}] Error: {e}")
             await asyncio.sleep(delay)
 
-# ── main admin@example.com ──────────────────────────────────────────────────────────────────────
+# ── main ──────────────────────────────────────────────────────────────────────
 
-async def run(api_url: str, nats_url: str, rate: float):
-    email = os.environ.get("SUPERUSER_EMAIL")
-    password = os.environ.get("SUPERUSER_PASSWORD")
+async def run(db_url: str, nats_url: str, rate: float):
+    print(f"Connecting to database at {db_url}...")
+    conn = await asyncpg.connect(db_url)
     
-    if not email or not password:
-        print("Error: SUPERUSER_EMAIL and SUPERUSER_PASSWORD environment variables must be set.")
-        return
-
-    api = ApiClient(api_url)
     try:
-        print("Logging in to API...")
-        await api.login(email, password)
-        
-        print("Fetching metadata...")
-        sensors = await api.fetch_all("/api/v1/sensors")
-        buildings = await api.fetch_all("/api/v1/buildings")
-        units = await api.fetch_all("/api/v1/units")
-        thresholds = await api.fetch_all("/api/v1/thresholds")
-        
-        print(f"Fetched {len(sensors)} sensors, {len(buildings)} buildings, {len(units)} units, {len(thresholds)} thresholds.")
-        
-        # Build maps
-        bld_map = {b["building_id"]: b for b in buildings}
-        unit_map = {u["unit_id"]: u for u in units}
-        
-        # Map sensor_id -> upper threshold (DAY)
-        upper_map = {}
-        for t in thresholds:
-            if t["threshold_type"] == "UPPER" and t["tariff_zone"] == "DAY":
-                upper_map[t["sensor_id"]] = t["limit_value"]
-                
-        # Prepare worker tasks
-        tasks = []
+        print("Fetching sensors metadata...")
+        query = """
+            SELECT 
+                s.sensor_id,
+                s.sensor_type,
+                COALESCE(b.building_type, ub.building_type) as building_type,
+                t.limit_value as upper_threshold
+            FROM sensors s
+            LEFT JOIN buildings b ON s.building_id = b.building_id
+            LEFT JOIN units u ON s.unit_id = u.unit_id
+            LEFT JOIN buildings ub ON u.building_id = ub.building_id
+            LEFT JOIN thresholds t ON s.sensor_id = t.sensor_id 
+                AND t.threshold_type = 'UPPER' 
+                AND t.tariff_zone = 'DAY'
+        """
+        rows = await conn.fetch(query)
+        print(f"Fetched {len(rows)} sensors.")
         
         print(f"Connecting to NATS at {nats_url}...")
         nc = await nats.connect(nats_url)
@@ -157,31 +108,21 @@ async def run(api_url: str, nats_url: str, rate: float):
         except Exception:
             pass  # stream already exists
             
+        tasks = []
         print("Starting workers...")
-        for s in sensors:
-            sensor_id = s["sensor_id"]
-            sensor_type = s["sensor_type"]
+        for row in rows:
+            sensor_id = str(row["sensor_id"])
+            sensor_type = row["sensor_type"]
+            b_type = row["building_type"]
+            upper = row["upper_threshold"] or 100.0
             
-            # Determine building type
-            b_type = None
-            if s.get("building_id"):
-                b_type = bld_map.get(s["building_id"], {}).get("building_type")
-            elif s.get("unit_id"):
-                u = unit_map.get(s["unit_id"])
-                if u and u.get("building_id"):
-                    b_type = bld_map.get(u["building_id"], {}).get("building_type")
-                    
             is_residential = (b_type == "RESIDENTIAL")
             
-            # Determine baseline
             if sensor_type == "COMMON":
                 baseline = 75.0 if is_residential else 450.0
             else:
                 baseline = 15.0
                 
-            # Determine upper threshold
-            upper = upper_map.get(sensor_id, 100.0) # Default fallback
-            
             tasks.append(
                 asyncio.create_task(
                     worker(sensor_id, baseline, is_residential, upper, js, subject, rate)
@@ -199,19 +140,23 @@ async def run(api_url: str, nats_url: str, rate: float):
         if 'tasks' in locals():
             for t in tasks:
                 t.cancel()
-        await api.close()
+        await conn.close()
         if 'nc' in locals():
             await nc.drain()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Real-time Telemetry Simulator")
-    parser.add_argument("--api-url", default="http://localhost:8000", help="CRUD API URL")
-    parser.add_argument("--nats-url", default="nats://localhost:4222", help="NATS server URL")
+    parser.add_argument(
+        "--database-url",
+        default=f"postgresql://{os.environ.get('POSTGRES_USER', 'user')}:{os.environ.get('POSTGRES_PASSWORD', 'password')}@postgres:5432/greenops_db",
+        help="Database URL"
+    )
+    parser.add_argument("--nats-url", default="nats://nuts:4222", help="NATS server URL")
     parser.add_argument("--rate", type=float, default=1.0, help="Messages per second per sensor")
     
     args = parser.parse_args()
     
     try:
-        asyncio.run(run(args.api_url, args.nats_url, args.rate))
+        asyncio.run(run(args.database_url, args.nats_url, args.rate))
     except KeyboardInterrupt:
         pass
