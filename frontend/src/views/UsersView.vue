@@ -75,10 +75,10 @@
               </td>
               <td class="py-2">
                 <div class="flex gap-1 justify-end">
-                  <button @click="openEditRole(r)" :disabled="!canManage(r.role)" class="icon-btn text-slate-400 hover:text-emerald-600 disabled:opacity-30 disabled:cursor-not-allowed">
+                  <button @click="openEditRole(r)" :disabled="!canManage(r)" class="icon-btn text-slate-400 hover:text-emerald-600 disabled:opacity-30 disabled:cursor-not-allowed">
                     <Pencil :size="14" />
                   </button>
-                  <button @click="confirmDeleteRole(r)" :disabled="!canManage(r.role)" class="icon-btn text-slate-400 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed">
+                  <button @click="confirmDeleteRole(r)" :disabled="!canManage(r)" class="icon-btn text-slate-400 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed">
                     <Trash2 :size="14" />
                   </button>
                 </div>
@@ -188,19 +188,29 @@ const changePage = async (p) => {
 };
 
 // Roles assignable by the current user (strictly lower rank)
-const myRank = computed(() => {
+const myGlobalRank = computed(() => {
   if (!me.value) return Infinity;
   const idx = ROLE_ORDER.indexOf(me.value.role);
   return idx === -1 ? Infinity : idx;
 });
 
+// Current user's own org roles, loaded when managing another user's roles
+const myOrgRoles = ref([]);
+
+const myEffectiveRank = (orgId) => {
+  const orgRole = myOrgRoles.value.find((r) => r.organization_id === orgId);
+  const orgRank = orgRole ? ROLE_ORDER.indexOf(orgRole.role) : Infinity;
+  return Math.min(myGlobalRank.value, orgRank === -1 ? Infinity : orgRank);
+};
+
 const assignableRoles = computed(() =>
-  ROLE_ORDER.filter((r, i) => i > myRank.value && !r.startsWith('SUPER'))
+  ROLE_ORDER.filter((r, i) => i > myGlobalRank.value && !r.startsWith('SUPER'))
 );
 
-const canManage = (role) => {
-  const targetRank = ROLE_ORDER.indexOf(role);
-  return myRank.value < targetRank;
+// r is a full role object { organization_id, role }
+const canManage = (r) => {
+  const targetRank = ROLE_ORDER.indexOf(r.role);
+  return myEffectiveRank(r.organization_id) < targetRank;
 };
 
 // Roles modal state
@@ -225,8 +235,12 @@ const openRoles = async (u) => {
   rolesError.value = '';
   roleForm.value = { organization_id: '', role: assignableRoles.value[0] || '' };
   targetRoles.value = [];
+  myOrgRoles.value = [];
   showRoles.value = true;
-  await loadRoles(u.id);
+  await Promise.all([
+    loadRoles(u.id),
+    userRolesApi.list(me.value.id).then(({ data }) => { myOrgRoles.value = data; }).catch(() => {}),
+  ]);
 };
 
 const submitCreateRole = async () => {
