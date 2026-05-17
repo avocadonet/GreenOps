@@ -25,6 +25,7 @@ class UserRolesPermissionProvider(PermissionProvider):
         RoleEnum.SUPER_OWNER: __maximum_perms,
         RoleEnum.SUPER_ADMIN: __maximum_perms,
         RoleEnum.SUPER_REDACTOR: __maximum_perms,
+        RoleEnum.ORGANIZATION_OWNER: __maximum_perms,
         RoleEnum.OWNER: __maximum_perms,
         RoleEnum.ADMIN: __maximum_perms,
         RoleEnum.REDACTOR: __maximum_perms,
@@ -41,12 +42,12 @@ class UserRolesPermissionProvider(PermissionProvider):
     ) -> set[PermissionsEnum]:
         """Определяет набор разрешений на основе роли пользователя и принадлежности к организации."""
 
-        result = self.__perms.get(RoleEnum.PUBLIC).copy()
+        result = self.__perms.get(RoleEnum.PUBLIC, set()).copy()
         if (
             user_role.role.value.startswith("SUPER")
             or user_role.organization_id == organization_id
         ):
-            result |= self.__perms.get(user_role.role)
+            result |= self.__perms.get(user_role.role, set())
         return result
 
     def __call__(self) -> set[PermissionsEnum]:
