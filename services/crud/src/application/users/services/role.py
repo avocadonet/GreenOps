@@ -73,6 +73,12 @@ class UserRoleService:
                 return await self._repository.update(entity)
             raise UserAccessDenied
 
+    async def read_all_by_organization_id(
+        self, org_id: int
+    ) -> list[UserOrganizationRole]:
+        async with self._tx:
+            return await self._repository.read_all_by_organization_id(org_id)
+
     async def delete(self, dto: DeleteUserRoleDto, actor: User) -> UserOrganizationRole:
         async with self._tx:
             actor_role = await self._role_getter(actor, dto.organization_id)

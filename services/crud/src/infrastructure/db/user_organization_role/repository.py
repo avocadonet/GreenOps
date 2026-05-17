@@ -67,3 +67,11 @@ class UserOrganizationRolesDatabaseRepository(
         return select(UserOrganizationRoleModel).where(
             UserOrganizationRoleModel.user_id == user_id
         )
+
+    @decorators.read_all
+    async def read_all_by_organization_id(
+        self, organization_id: int, page: int = 1, page_size: int = 100
+    ) -> list[UserOrganizationRole]:
+        return select(UserOrganizationRoleModel).where(
+            UserOrganizationRoleModel.organization_id == organization_id
+        )

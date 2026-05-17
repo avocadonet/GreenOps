@@ -64,7 +64,14 @@ class UserOrganizationRolesRepository(metaclass=ABCMeta):
     async def delete(self, role: UserOrganizationRole) -> UserOrganizationRole: ...
 
     @abstractmethod
-    async def read_all(self, user_id: int) -> list[UserOrganizationRole]: ...
+    async def read_all(
+        self, user_id: int, page: int = 1, page_size: int = 100
+    ) -> list[UserOrganizationRole]: ...
+
+    @abstractmethod
+    async def read_all_by_organization_id(
+        self, organization_id: int, page: int = 1, page_size: int = 100
+    ) -> list[UserOrganizationRole]: ...
 
 
 class UserActivationTokenRepository(metaclass=ABCMeta):
