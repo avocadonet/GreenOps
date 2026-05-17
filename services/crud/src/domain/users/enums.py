@@ -39,6 +39,7 @@ roles_delete_priorities = [
     RoleEnum.OWNER,
     RoleEnum.ADMIN,
     RoleEnum.REDACTOR,
+    RoleEnum.PUBLIC,
 ]
 
 roles_priorities_table = {role: i for i, role in enumerate(roles_priorities)}
