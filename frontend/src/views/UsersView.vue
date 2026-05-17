@@ -91,7 +91,7 @@
         </table>
       </div>
 
-      <div v-if="assignableRoles.length" class="border-t border-slate-100 pt-4">
+      <div class="border-t border-slate-100 pt-4">
         <p class="text-xs font-semibold text-slate-500 mb-3">Assign New Role</p>
         <form @submit.prevent="submitCreateRole" class="space-y-3">
           <div>
@@ -101,7 +101,7 @@
           <div>
             <label class="form-label">Role</label>
             <select v-model="roleForm.role" required class="form-input">
-              <option v-for="r in assignableRoles" :key="r" :value="r">{{ r }}</option>
+              <option v-for="r in assignableRolesFor(roleForm.organization_id)" :key="r" :value="r">{{ r }}</option>
             </select>
           </div>
           <div class="flex gap-3 justify-end">
@@ -119,7 +119,7 @@
         <div>
           <label class="form-label">Role</label>
           <select v-model="editRoleForm.role" required class="form-input">
-            <option v-for="r in assignableRoles" :key="r" :value="r">{{ r }}</option>
+            <option v-for="r in assignableRolesFor(editRoleTarget?.organization_id)" :key="r" :value="r">{{ r }}</option>
           </select>
         </div>
         <div v-if="rolesError" class="text-sm text-red-600">{{ rolesError }}</div>
@@ -203,9 +203,10 @@ const myEffectiveRank = (orgId) => {
   return Math.min(myGlobalRank.value, orgRank === -1 ? Infinity : orgRank);
 };
 
-const assignableRoles = computed(() =>
-  ROLE_ORDER.filter((r, i) => i > myGlobalRank.value && !r.startsWith('SUPER'))
-);
+const assignableRolesFor = (orgId) => {
+  const rank = orgId != null && orgId !== '' ? myEffectiveRank(orgId) : myGlobalRank.value;
+  return ROLE_ORDER.filter((r, i) => i > rank && !r.startsWith('SUPER'));
+};
 
 // r is a full role object { organization_id, role }
 const canManage = (r) => {
@@ -233,7 +234,7 @@ const loadRoles = async (userId) => {
 const openRoles = async (u) => {
   rolesTarget.value = u;
   rolesError.value = '';
-  roleForm.value = { organization_id: '', role: assignableRoles.value[0] || '' };
+  roleForm.value = { organization_id: '', role: '' };
   targetRoles.value = [];
   myOrgRoles.value = [];
   showRoles.value = true;
@@ -252,7 +253,7 @@ const submitCreateRole = async () => {
       organization_id: roleForm.value.organization_id,
       role: roleForm.value.role,
     });
-    roleForm.value = { organization_id: '', role: assignableRoles.value[0] || '' };
+    roleForm.value = { organization_id: '', role: '' };
     await loadRoles(rolesTarget.value.id);
   } catch (e) {
     rolesError.value = e.response?.data?.detail || 'Failed to assign role.';
