@@ -27,7 +27,7 @@ class UserService:
         self._tx = tx
         self._role_getter = role_getter
         self._organization_service = organization_service
-        self._roles_servcie = roles_service
+        self._roles_service = roles_service
 
     def _check(self, user: User, *perms: PermissionsEnum) -> None:
         PermissionBuilder().providers(UserPermissionProvider(user)).add(*perms).apply()
