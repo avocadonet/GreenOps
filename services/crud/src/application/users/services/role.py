@@ -26,10 +26,9 @@ class UserRoleService:
         self, role: UserOrganizationRole, actor_role: UserOrganizationRole
     ) -> bool:
         return (
-            role.role != RoleEnum.OWNER or actor_role.role == RoleEnum.SUPER_USER
-        ) and roles_delete_priorities_table[
-            actor_role.role
-        ] < roles_delete_priorities_table[role.role]
+            roles_delete_priorities_table[actor_role.role]
+            < roles_delete_priorities_table[role.role]
+        )
 
     async def get(self, user_id: int, organization_id: int) -> UserOrganizationRole:
         return await self._repository.read(user_id, organization_id)
@@ -81,10 +80,7 @@ class UserRoleService:
                 UserRolesPermissionProvider(dto.organization_id, actor_role)
             ).add(PermissionsEnum.CAN_DELETE_ROLE).apply()
             if role := await self._repository.read(dto.user_id, dto.organization_id):
-                if (
-                    roles_delete_priorities_table[actor_role.role]
-                    < roles_delete_priorities_table[role.role]
-                ):
+                if self._can_manage(role, actor_role):
                     return await self._repository.delete(role)
                 raise UserAccessDenied
             raise UserRoleNotFoundError

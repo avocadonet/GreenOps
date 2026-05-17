@@ -6,6 +6,7 @@ from application.transaction import TransactionsGateway
 from domain.organization.repository import OrganizationRepository
 from domain.users.entities import User
 from domain.users.role_getter import RoleGetter
+from domain.exceptions import EntityAccessDenied
 from shared.dtos.organization import CreateOrganizationDTO, UpdateOrganizationDTO
 from shared.entities.organization import Organization
 
@@ -35,8 +36,28 @@ class OrganizationService:
     async def list_all(
         self, user: User, page: int, page_size: int
     ) -> list[Organization]:
-        self._check(user, PermissionsEnum.CAN_READ_ORGANIZATION)
-        return await self._repository.list_all(page, page_size)
+        result = []
+        async with self._tx:
+            organizations = await self._repository.list_all(page, page_size)
+            try:
+                await self._check(user, PermissionsEnum.CAN_READ_ORGANIZATION)
+                return organizations
+            except EntityAccessDenied:
+                pass
+
+            for org in organizations:
+                try:
+                    await self._check_org(
+                        user, org.id, PermissionsEnum.CAN_READ_ORGANIZATION
+                    )
+                    result.append(org)
+                except EntityAccessDenied:
+                    continue
+
+            if len(result) == 0:
+                raise EntityAccessDenied()
+
+            return result
 
     async def create(self, user: User, dto: CreateOrganizationDTO) -> Organization:
         self._check(user, PermissionsEnum.CAN_CREATE_ORGANIZATION)
@@ -48,8 +69,9 @@ class OrganizationService:
         return org
 
     async def update(self, user: User, dto: UpdateOrganizationDTO) -> Organization:
-        await self._check_org(user, dto.id, PermissionsEnum.CAN_UPDATE_ORGANIZATION)
         async with self._tx:
+            await self._check_org(user, dto.id, PermissionsEnum.CAN_UPDATE_ORGANIZATION)
+
             org = await self._repository.read(dto.id)
             org.name = dto.name
             org.description = dto.description
@@ -57,7 +79,8 @@ class OrganizationService:
             return await self._repository.update(org)
 
     async def delete(self, user: User, org_id: int) -> Organization:
-        await self._check_org(user, org_id, PermissionsEnum.CAN_DELETE_ORGANIZATION)
         async with self._tx:
+            await self._check_org(user, org_id, PermissionsEnum.CAN_DELETE_ORGANIZATION)
+
             org = await self._repository.read(org_id)
             return await self._repository.delete(org)

@@ -90,7 +90,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "rate(pg_stat_database_blks_hit_total{datname=\"greenops_db\"}[5m]) / (rate(pg_stat_database_blks_hit_total{datname=\"greenops_db\"}[5m]) + rate(pg_stat_database_blks_read_total{datname=\"greenops_db\"}[5m]) + 0.001) * 100",
+          "expr": "rate(pg_stat_database_blks_hit{datname=\"greenops_db\"}[5m]) / (rate(pg_stat_database_blks_hit{datname=\"greenops_db\"}[5m]) + rate(pg_stat_database_blks_read{datname=\"greenops_db\"}[5m]) + 0.001) * 100",
           "legendFormat": "Cache Hit",
           "refId": "A"
         }
@@ -118,7 +118,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "rate(pg_stat_database_xact_commit_total{datname=\"greenops_db\"}[1m])",
+          "expr": "rate(pg_stat_database_xact_commit{datname=\"greenops_db\"}[1m])",
           "legendFormat": "TPS",
           "refId": "A"
         }
@@ -151,13 +151,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "rate(pg_stat_database_xact_commit_total{datname=\"greenops_db\"}[1m])",
+          "expr": "rate(pg_stat_database_xact_commit{datname=\"greenops_db\"}[1m])",
           "legendFormat": "Commits/s",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "rate(pg_stat_database_xact_rollback_total{datname=\"greenops_db\"}[1m])",
+          "expr": "rate(pg_stat_database_xact_rollback{datname=\"greenops_db\"}[1m])",
           "legendFormat": "Rollbacks/s",
           "refId": "B"
         }
