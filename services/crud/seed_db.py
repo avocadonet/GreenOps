@@ -17,6 +17,7 @@ import math
 import random
 import uuid
 import os
+import json
 from datetime import date, datetime, timedelta
 
 import asyncpg
@@ -24,41 +25,41 @@ import bcrypt
 import secrets
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
-pwd = secrets.token_hex(20)
-print(pwd)
 
 USERS = [
     dict(
         email="super@greenops.io",
         fullname="Super Admin",
-        password=os.environ.get("SUPERUSER_PASSWORD", pwd),
+        password=secrets.token_hex(20),
         role="SUPER_USER",
     ),
     dict(
         email="admin@ecoresidence.io",
         fullname="EcoRes Admin",
-        password=os.environ.get("SUPERUSER_PASSWORD", pwd),
+        password=secrets.token_hex(20),
         role="PUBLIC",
     ),
     dict(
         email="admin@industrialops.io",
         fullname="IndustrialOps Admin",
-        password=os.environ.get("SUPERUSER_PASSWORD", pwd),
+        password=secrets.token_hex(20),
         role="PUBLIC",
     ),
     dict(
         email="redactor@ecoresidence.io",
         fullname="EcoRes Redactor",
-        password=os.environ.get("SUPERUSER_PASSWORD", pwd),
+        password=secrets.token_hex(20),
         role="PUBLIC",
     ),
     dict(
         email="owner@ecoresidence.io",
         fullname="Unit Owner",
-        password=os.environ.get("SUPERUSER_PASSWORD", pwd),
+        password=secrets.token_hex(20),
         role="PUBLIC",
     ),
 ]
+
+print(json.dumps(USERS, indent=2))
 
 ORGS = [
     dict(
@@ -580,7 +581,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="GreenOps DB seeder")
     parser.add_argument(
         "--database-url",
-        default="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres:5432/greenops_db",
+        default=f"postgresql://{os.environ.get('POSTGRES_USER')}:${os.environ.get('POSTGRES_PASSWORD')}@postgres:5432/greenops_db",
     )
     parser.add_argument("--days", type=int, default=7, help="Days of metric history")
     parser.add_argument(

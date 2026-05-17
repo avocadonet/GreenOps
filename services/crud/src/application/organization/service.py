@@ -40,7 +40,7 @@ class OrganizationService:
         async with self._tx:
             organizations = await self._repository.list_all(page, page_size)
             try:
-                await self._check(user, PermissionsEnum.CAN_READ_ORGANIZATION)
+                self._check(user, PermissionsEnum.CAN_READ_ORGANIZATION)
                 return organizations
             except EntityAccessDenied:
                 pass

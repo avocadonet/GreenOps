@@ -1,13 +1,14 @@
 import logging
 
 from adaptix import Retort
-from dishka.integrations.faststream import FromDishka
+from dishka.integrations.faststream import FromDishka, inject
 from faststream.nats import NatsRouter
 from faststream.nats.schemas import JStream
 
 from shared.dtos.incident import IncidentCreatedEvent
 from shared.dtos.metric import CreateMetricDTO
 from telemetry import TelemetryService
+import json
 
 logger = logging.getLogger(__name__)
 router = NatsRouter()

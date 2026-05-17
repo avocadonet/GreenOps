@@ -14,5 +14,5 @@ def create_app() -> FastStream:
 
     app = FastStream(broker)
     container = create_container(broker)
-    setup_dishka(container, app)
+    setup_dishka(container, app, auto_inject=True)
     return app

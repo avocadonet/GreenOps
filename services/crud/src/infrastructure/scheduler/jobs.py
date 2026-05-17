@@ -23,13 +23,12 @@ def register_jobs(scheduler: AsyncIOScheduler, container: AsyncContainer) -> Non
             service = await request_container.get(EnergyBalanceService)
             await service.run_daily()
 
-    # :05 past every hour — avoids the :00 thundering herd
-    scheduler.add_job(run_average_load, CronTrigger(minute=5), id="average_load_hourly")
-    # 00:10 daily — gives nuts consumers a few minutes to flush last metrics
+    # Run every minute for testing/demonstration
+    scheduler.add_job(run_average_load, CronTrigger(minute='*'), id="average_load_hourly")
     scheduler.add_job(
-        run_energy_balance, CronTrigger(hour=0, minute=10), id="energy_balance_daily"
+        run_energy_balance, CronTrigger(minute='*'), id="energy_balance_daily"
     )
 
     logger.info(
-        "Registered 2 scheduled jobs: average_load_hourly, energy_balance_daily"
+        "Registered 2 scheduled jobs: average_load_hourly, energy_balance_daily (running every minute)"
     )
